@@ -518,8 +518,8 @@
                       <div style="font-size:0.75rem; color:var(--text-dim);">${e.description}</div>
                     </td>
                     <td>
-                      <span class="ip-bind-badge ${e.is_localhost_only?"local":"external"}">
-                        ${e.bind_ip} ${e.is_localhost_only?"(Local)":"(Public)"}
+                      <span class="ip-bind-badge ${e.ip_scope||(e.is_localhost_only?"loopback":"public")}">
+                        ${e.bind_ip} <span class="scope-tag">(${e.ip_label||(e.is_localhost_only?"Localhost":"Public")})</span>
                       </span>
                     </td>
                     <td style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-muted);">

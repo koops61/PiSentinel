@@ -1,7 +1,11 @@
 import socket
 import logging
+import ipaddress
 from typing import List, Dict, Any
-import psutil
+try:
+    import psutil
+except ImportError:
+    psutil = None
 
 logger = logging.getLogger("pisentinel.ports")
 
@@ -37,6 +41,18 @@ PORT_DATABASE = {
         "risk": "low",
         "recommendation": "Si utilisé avec Pi-hole, assurez-vous qu'il n'est accessible que sur le LAN privé."
     },
+    67: {
+        "service": "DHCP Server",
+        "description": "Serveur d'attribution d'adresses IP locale",
+        "risk": "low",
+        "recommendation": "Service réseau local pour l'attribution dynamique d'adresses IP privées."
+    },
+    68: {
+        "service": "DHCP Client",
+        "description": "Client DHCP local",
+        "risk": "safe",
+        "recommendation": "Client réseau pour l'obtention de la configuration IP sur votre box/routeur."
+    },
     80: {
         "service": "HTTP",
         "description": "Serveur Web non chiffré",
@@ -48,6 +64,18 @@ PORT_DATABASE = {
         "description": "Relève de courrier non sécurisé",
         "risk": "high",
         "recommendation": "Migrez vers POP3S (Port 995) avec chiffrement TLS."
+    },
+    137: {
+        "service": "NetBIOS Name Service",
+        "description": "Résolution de noms NetBIOS locale",
+        "risk": "low",
+        "recommendation": "Utilisé par Samba pour la découverte des partages Windows sur le réseau local (LAN)."
+    },
+    138: {
+        "service": "NetBIOS Datagram",
+        "description": "Service de datagrammes NetBIOS local",
+        "risk": "low",
+        "recommendation": "Communication réseau locale pour les partages de fichiers Windows."
     },
     139: {
         "service": "NetBIOS",
@@ -77,7 +105,13 @@ PORT_DATABASE = {
         "service": "RDP",
         "description": "Bureau à distance Windows / XRDP",
         "risk": "critical",
-        "recommendation": "N'exposez jamais le bureau à distance directement sans tunnel SSH ou VPN."
+        "recommendation": "N'exposez jamais le bureau à distance directement à Internet sans tunnel SSH ou VPN."
+    },
+    5353: {
+        "service": "mDNS (Avahi / Bonjour)",
+        "description": "Découverte de services locaux (ex: raspberrypi.local)",
+        "risk": "safe",
+        "recommendation": "Protocole multicast local permettant de joindre la Pi sur le réseau via son nom d'hôte."
     },
     5432: {
         "service": "PostgreSQL",
@@ -109,6 +143,12 @@ PORT_DATABASE = {
         "risk": "medium",
         "recommendation": "Vérifiez les applications exécutées sur ce port et appliquez une authentification forte."
     },
+    8443: {
+        "service": "PiSentinel Backend",
+        "description": "API & Hub interne PiSentinel",
+        "risk": "safe",
+        "recommendation": "Port interne d'écoute de l'application PiSentinel (redirigé par le reverse proxy Apache)."
+    },
     51820: {
         "service": "WireGuard",
         "description": "VPN hautement sécurisé",
@@ -117,35 +157,150 @@ PORT_DATABASE = {
     }
 }
 
+def classify_ip_scope(ip: str) -> Dict[str, Any]:
+    """
+    Classifies an IP address into its network scope:
+    - loopback: 127.0.0.1, ::1 (Localhost only)
+    - lan: RFC 1918 (192.168.0.0/16, 10.0.0.0/8, 172.16.0.0/12), link-local (169.254.x.x, fe80::/10)
+    - wildcard: 0.0.0.0, :: (All network interfaces / Unspecified)
+    - public: Truly public, globally routable Internet IP
+    """
+    clean_ip = (ip or "").strip()
+
+    if clean_ip in ("localhost", "127.0.0.1", "::1"):
+        return {
+            "scope": "loopback",
+            "label": "Localhost",
+            "is_loopback": True,
+            "is_lan": False,
+            "is_public": False
+        }
+
+    if clean_ip in ("0.0.0.0", "::", "*"):
+        return {
+            "scope": "wildcard",
+            "label": "Toutes interfaces",
+            "is_loopback": False,
+            "is_lan": False,
+            "is_public": True
+        }
+
+    try:
+        addr = ipaddress.ip_address(clean_ip)
+        if addr.is_loopback:
+            return {
+                "scope": "loopback",
+                "label": "Localhost",
+                "is_loopback": True,
+                "is_lan": False,
+                "is_public": False
+            }
+        if addr.is_unspecified:
+            return {
+                "scope": "wildcard",
+                "label": "Toutes interfaces",
+                "is_loopback": False,
+                "is_lan": False,
+                "is_public": True
+            }
+        if addr.is_private or addr.is_link_local:
+            return {
+                "scope": "lan",
+                "label": "LAN Privé",
+                "is_loopback": False,
+                "is_lan": True,
+                "is_public": False
+            }
+        return {
+            "scope": "public",
+            "label": "Public",
+            "is_loopback": False,
+            "is_lan": False,
+            "is_public": True
+        }
+    except ValueError:
+        # Fallback string check for standard RFC 1918 private subnets
+        if clean_ip.startswith(("192.168.", "10.", "172.16.", "172.17.", "172.18.", "172.19.", "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.", "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.")):
+            return {
+                "scope": "lan",
+                "label": "LAN Privé",
+                "is_loopback": False,
+                "is_lan": True,
+                "is_public": False
+            }
+        return {
+            "scope": "public",
+            "label": "Public",
+            "is_loopback": False,
+            "is_lan": False,
+            "is_public": True
+        }
+
 def analyze_port(port: int, ip: str, pid: int = None, pname: str = None) -> Dict[str, Any]:
     info = PORT_DATABASE.get(port, {
         "service": f"Service applicatif (Port {port})",
         "description": "Service personnalisé ou démon local",
-        "risk": "low" if ip in ("127.0.0.1", "::1") else "medium",
+        "risk": "low",
         "recommendation": "Vérifiez si ce service a besoin d'être ouvert à tout le réseau ou s'il peut être restreint à 127.0.0.1."
     })
 
-    is_localhost = ip in ("127.0.0.1", "::1", "localhost")
-    effective_risk = info["risk"]
+    scope_info = classify_ip_scope(ip)
+    scope = scope_info["scope"]
+    base_risk = info["risk"]
+    effective_risk = base_risk
+    recommendation = info["recommendation"]
 
-    if is_localhost:
-        if effective_risk in ("critical", "high"):
+    if scope == "loopback":
+        # Loopback 127.0.0.1: only accessible from localhost
+        effective_risk = "safe" if base_risk in ("safe", "low") else "low"
+        recommendation = "Service restreint à la machine locale (127.0.0.1). Isolé du réseau extérieur."
+
+    elif scope == "lan":
+        # Bound strictly to private LAN (RFC 1918, ex: 192.168.x.x, 10.x.x.x)
+        # Not accessible from the Internet directly
+        if port in (137, 138, 139, 445):
+            effective_risk = "low"
+            recommendation = "Partage Samba/NetBIOS actif sur le réseau local privé (LAN). Protégé d'Internet par le pare-feu de votre box/routeur."
+        elif port == 3389:
+            effective_risk = "low"
+            recommendation = "Bureau à distance (RDP/XRDP) accessible uniquement sur vos réseaux locaux (LAN ou VPN)."
+        elif port in (53, 67, 68, 5353, 8443):
+            effective_risk = "safe"
+            recommendation = f"{info['service']} actif sur le réseau local (LAN). Conforme."
+        elif base_risk in ("critical", "high"):
             effective_risk = "medium"
-        elif effective_risk == "medium":
+            recommendation = f"{info['description']} - Accessible sur votre réseau local ({ip}). Non exposé à Internet."
+        elif base_risk == "medium":
             effective_risk = "low"
+        else:
+            effective_risk = base_risk
+
+    elif scope == "wildcard":
+        # Listening on 0.0.0.0 or :: (all interfaces)
+        if port in (443, 51820):
+            effective_risk = "safe"
+        elif port in (80, 8080):
+            effective_risk = "medium"
+        elif port in (139, 445, 3389, 21, 23):
+            effective_risk = "critical"
+        else:
+            effective_risk = base_risk
     else:
-        # Listening on 0.0.0.0 or public IP
-        if effective_risk == "safe" and port not in (443, 51820):
-            effective_risk = "low"
+        # Listening directly on a public routable IP
+        effective_risk = base_risk
 
     return {
         "port": port,
         "bind_ip": ip,
-        "is_localhost_only": is_localhost,
+        "ip_scope": scope,
+        "ip_label": scope_info["label"],
+        "is_localhost_only": scope_info["is_loopback"],
+        "is_lan": scope_info["is_lan"],
+        "is_public": scope_info["is_public"],
         "service": info["service"],
         "description": info["description"],
         "risk": effective_risk,
-        "recommendation": info["recommendation"],
+        "recommendation": recommendation,
         "pid": pid,
         "process_name": pname or "Inconnu"
     }
@@ -158,34 +313,35 @@ def get_open_ports() -> Dict[str, Any]:
     seen = set()
 
     try:
-        connections = psutil.net_connections(kind="inet")
-        for conn in connections:
-            # We focus on TCP servers actively in LISTEN state
-            # or well-known UDP service daemons (< 10000 or WireGuard 51820), skipping ephemeral client ports
-            is_tcp_listen = conn.status == "LISTEN"
-            is_udp_server = conn.type == socket.SOCK_DGRAM and conn.laddr and (conn.laddr.port < 10000 or conn.laddr.port == 51820)
+        if psutil:
+            connections = psutil.net_connections(kind="inet")
+            for conn in connections:
+                # We focus on TCP servers actively in LISTEN state
+                # or well-known UDP service daemons (< 10000 or WireGuard 51820), skipping ephemeral client ports
+                is_tcp_listen = conn.status == "LISTEN"
+                is_udp_server = conn.type == socket.SOCK_DGRAM and conn.laddr and (conn.laddr.port < 10000 or conn.laddr.port == 51820)
 
-            if is_tcp_listen or is_udp_server:
-                ip = conn.laddr.ip
-                port = conn.laddr.port
-                
-                # Deduplicate by port + ip
-                key = (ip, port)
-                if key in seen:
-                    continue
-                seen.add(key)
+                if is_tcp_listen or is_udp_server:
+                    ip = conn.laddr.ip
+                    port = conn.laddr.port
+                    
+                    # Deduplicate by port + ip
+                    key = (ip, port)
+                    if key in seen:
+                        continue
+                    seen.add(key)
 
-                pname = None
-                if conn.pid:
-                    try:
-                        p = psutil.Process(conn.pid)
-                        pname = p.name()
-                    except (psutil.NoSuchProcess, psutil.AccessDenied):
-                        pname = "Système / Root"
+                    pname = None
+                    if conn.pid:
+                        try:
+                            p = psutil.Process(conn.pid)
+                            pname = p.name()
+                        except Exception:
+                            pname = "Système / Root"
 
-                analysis = analyze_port(port, ip, conn.pid, pname)
-                open_ports_list.append(analysis)
-    except (psutil.AccessDenied, Exception) as e:
+                    analysis = analyze_port(port, ip, conn.pid, pname)
+                    open_ports_list.append(analysis)
+    except Exception as e:
         logger.warning(f"Could not scan all connections with psutil: {e}")
 
     # Fallback typical Raspberry Pi ports if scanning returns nothing (e.g. sandbox restriction)

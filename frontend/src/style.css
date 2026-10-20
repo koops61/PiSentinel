@@ -831,19 +831,44 @@ body::before {
 .ip-bind-badge {
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  padding: 2px 7px;
+  padding: 3px 8px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.05);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
 }
 
-.ip-bind-badge.external {
-  color: var(--crimson);
-  background: rgba(255, 51, 102, 0.1);
+.ip-bind-badge .scope-tag {
+  font-size: 0.7rem;
+  opacity: 0.88;
 }
 
+.ip-bind-badge.lan {
+  color: var(--cyan-neon);
+  background: rgba(0, 242, 254, 0.1);
+  border: 1px solid rgba(0, 242, 254, 0.28);
+}
+
+.ip-bind-badge.loopback,
 .ip-bind-badge.local {
   color: var(--emerald);
   background: rgba(0, 245, 160, 0.1);
+  border: 1px solid rgba(0, 245, 160, 0.28);
+}
+
+.ip-bind-badge.wildcard {
+  color: var(--amber);
+  background: rgba(255, 170, 0, 0.1);
+  border: 1px solid rgba(255, 170, 0, 0.28);
+}
+
+.ip-bind-badge.public,
+.ip-bind-badge.external {
+  color: var(--crimson);
+  background: rgba(255, 51, 102, 0.1);
+  border: 1px solid rgba(255, 51, 102, 0.28);
 }
 
 /* ==========================================================================

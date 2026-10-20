@@ -982,8 +982,8 @@ function renderPortsTab() {
                       <div style="font-size:0.75rem; color:var(--text-dim);">${p.description}</div>
                     </td>
                     <td>
-                      <span class="ip-bind-badge ${p.is_localhost_only ? 'local' : 'external'}">
-                        ${p.bind_ip} ${p.is_localhost_only ? '(Local)' : '(Public)'}
+                      <span class="ip-bind-badge ${p.ip_scope || (p.is_localhost_only ? 'loopback' : 'public')}">
+                        ${p.bind_ip} <span class="scope-tag">(${p.ip_label || (p.is_localhost_only ? 'Localhost' : 'Public')})</span>
                       </span>
                     </td>
                     <td style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-muted);">
