@@ -75,21 +75,21 @@ class AuditService:
             lines = self._read_file_lines(self.lynis_report_path)
             for line in lines:
                 line = line.strip()
-                    if line.startswith("hardening_index="):
-                        val = line.split("=", 1)[1]
-                        hardening_index = int(val) if val.isdigit() else 0
-                    elif line.startswith("suggestion[]="):
-                        content = line.split("=", 1)[1]
-                        parts = content.split("|")
-                        s_id = parts[0] if len(parts) > 0 else "LYNIS"
-                        s_desc = parts[1] if len(parts) > 1 else content
-                        suggestions.append({"id": s_id, "desc": s_desc})
-                    elif line.startswith("warning[]="):
-                        content = line.split("=", 1)[1]
-                        parts = content.split("|")
-                        w_id = parts[0] if len(parts) > 0 else "ALERT"
-                        w_desc = parts[1] if len(parts) > 1 else content
-                        warnings.append({"id": w_id, "desc": w_desc})
+                if line.startswith("hardening_index="):
+                    val = line.split("=", 1)[1]
+                    hardening_index = int(val) if val.isdigit() else 0
+                elif line.startswith("suggestion[]="):
+                    content = line.split("=", 1)[1]
+                    parts = content.split("|")
+                    s_id = parts[0] if len(parts) > 0 else "LYNIS"
+                    s_desc = parts[1] if len(parts) > 1 else content
+                    suggestions.append({"id": s_id, "desc": s_desc})
+                elif line.startswith("warning[]="):
+                    content = line.split("=", 1)[1]
+                    parts = content.split("|")
+                    w_id = parts[0] if len(parts) > 0 else "ALERT"
+                    w_desc = parts[1] if len(parts) > 1 else content
+                    warnings.append({"id": w_id, "desc": w_desc})
 
             return {
                 "available": True,
@@ -137,27 +137,27 @@ class AuditService:
             for line in lines:
                 if "[Warning]" in line or "Warning:" in line:
                     cleaned = line.strip()
-                        # Extract explanation for common Debian/RPi false positives
-                        explanation = "Avertissement système détecté."
-                        is_fp = False
-                        if "PermitRootLogin" in cleaned:
-                            explanation = "Configuration SSH par défaut : autorise root ou n'est pas restreint."
-                            is_fp = True
-                        elif "/dev/shm" in cleaned:
-                            explanation = "Mémoire partagée Linux (/dev/shm) : comportement normal sous Raspberry Pi OS."
-                            is_fp = True
-                        elif ".pwd.lock" in cleaned:
-                            explanation = "Fichier de verrouillage des mots de passe Debian : faux positif classique."
-                            is_fp = True
-                        elif "lwp-request" in cleaned:
-                            explanation = "Script Perl standard du système utilisé par libwww-perl."
-                            is_fp = True
+                    # Extract explanation for common Debian/RPi false positives
+                    explanation = "Avertissement système détecté."
+                    is_fp = False
+                    if "PermitRootLogin" in cleaned:
+                        explanation = "Configuration SSH par défaut : autorise root ou n'est pas restreint."
+                        is_fp = True
+                    elif "/dev/shm" in cleaned:
+                        explanation = "Mémoire partagée Linux (/dev/shm) : comportement normal sous Raspberry Pi OS."
+                        is_fp = True
+                    elif ".pwd.lock" in cleaned:
+                        explanation = "Fichier de verrouillage des mots de passe Debian : faux positif classique."
+                        is_fp = True
+                    elif "lwp-request" in cleaned:
+                        explanation = "Script Perl standard du système utilisé par libwww-perl."
+                        is_fp = True
 
-                        warnings.append({
-                            "raw": cleaned,
-                            "explanation": explanation,
-                            "is_false_positive": is_fp
-                        })
+                    warnings.append({
+                        "raw": cleaned,
+                        "explanation": explanation,
+                        "is_false_positive": is_fp
+                    })
 
             return {
                 "available": True,
