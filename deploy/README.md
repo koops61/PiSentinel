@@ -44,7 +44,7 @@ sudo nano /etc/nginx/sites-available/default
 ```nginx
     # --- PiSentinel Hub (Subpath /sentinel) ---
     location /sentinel/ {
-        proxy_pass http://127.0.0.1:8000/;
+        proxy_pass http://127.0.0.1:8443/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "upgrade";
@@ -74,12 +74,12 @@ Dans la configuration de votre VirtualHost SSL (`/etc/apache2/sites-available/00
 
 ```apache
     # --- WebSocket Stream PiSentinel ---
-    ProxyPass /sentinel/api/ws/ ws://127.0.0.1:8000/api/ws/
-    ProxyPassReverse /sentinel/api/ws/ ws://127.0.0.1:8000/api/ws/
+    ProxyPass /sentinel/api/ws/ ws://127.0.0.1:8443/api/ws/
+    ProxyPassReverse /sentinel/api/ws/ ws://127.0.0.1:8443/api/ws/
 
     # --- Application PiSentinel ---
-    ProxyPass /sentinel http://127.0.0.1:8000
-    ProxyPassReverse /sentinel http://127.0.0.1:8000
+    ProxyPass /sentinel http://127.0.0.1:8443
+    ProxyPassReverse /sentinel http://127.0.0.1:8443
     ProxyPreserveHost On
 ```
 
@@ -98,7 +98,7 @@ sudo systemctl restart apache2
    - Type d'application : **Web application**.
    - **Authorized JavaScript origins (Origines JavaScript autorisées)** :
      - `https://mon-domaine.com`
-     - `http://localhost:8000` (pour les tests locaux)
+     - `http://localhost:8443` (pour les tests locaux)
 4. Copiez votre **Client ID**.
 
 ---
@@ -124,8 +124,9 @@ ALLOWED_EMAILS=votre.email@gmail.com,autre.admin@gmail.com
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=VotreMotDePasseTresSecurise2026!
 
-# Port et sous-chemin de reverse proxy
-PORT=8000
+# Port interne dédié (le port 80 reste pour votre site actuel)
+HOST=127.0.0.1
+PORT=8443
 ROOT_PATH=/sentinel
 ```
 
