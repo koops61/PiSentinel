@@ -1,7 +1,7 @@
 (function(){const e=document.createElement("link").relList;if(e&&e.supports&&e.supports("modulepreload"))return;for(const i of document.querySelectorAll('link[rel="modulepreload"]'))n(i);new MutationObserver(i=>{for(const r of i)if(r.type==="childList")for(const l of r.addedNodes)l.tagName==="LINK"&&l.rel==="modulepreload"&&n(l)}).observe(document,{childList:!0,subtree:!0});function s(i){const r={};return i.integrity&&(r.integrity=i.integrity),i.referrerPolicy&&(r.referrerPolicy=i.referrerPolicy),i.crossOrigin==="use-credentials"?r.credentials="include":i.crossOrigin==="anonymous"?r.credentials="omit":r.credentials="same-origin",r}function n(i){if(i.ep)return;i.ep=!0;const r=s(i);fetch(i.href,r)}})();const $="pisentinel_token",y={getToken:()=>localStorage.getItem($),setToken:a=>localStorage.setItem($,a),removeToken:()=>localStorage.removeItem($)},j=()=>(window.location.pathname||"").includes("/sentinel")?"/sentinel":"";async function u(a,e={}){const s=y.getToken(),n={"Content-Type":"application/json",...e.headers||{}};s&&(n.Authorization=`Bearer ${s}`);const i=j(),r=a.startsWith("http")?a:`${i}${a}`,l=await fetch(r,{...e,headers:n});if(l.status===401){y.removeToken(),window.dispatchEvent(new CustomEvent("pisentinel:unauthorized"));const g=await l.json().catch(()=>({detail:"Session expirée"}));throw new Error(g.detail||"Non autorisé")}if(!l.ok){const g=await l.json().catch(()=>({detail:`Erreur HTTP ${l.status}`}));throw new Error(g.detail||`Erreur serveur (${l.status})`)}return l.json()}const c={auth:{getConfig:()=>u("/api/auth/config"),loginGoogle:a=>u("/api/auth/google",{method:"POST",body:JSON.stringify({credential:a})}),loginLocal:(a,e)=>u("/api/auth/login",{method:"POST",body:JSON.stringify({username:a,password:e})}),getMe:()=>u("/api/auth/me"),logout:()=>u("/api/auth/logout",{method:"POST"})},system:{getStatus:()=>u("/api/system/status"),getSummary:()=>u("/api/system/summary")},ports:{getPorts:()=>u("/api/ports"),getHardeningRules:()=>u("/api/ports/hardening-rules")},tools:{getTools:()=>u("/api/tools"),control:(a,e)=>u(`/api/tools/${a}/control`,{method:"POST",body:JSON.stringify({action:e})}),install:a=>u(`/api/tools/${a}/install`,{method:"POST"})},attacks:{getAttacks:()=>u("/api/attacks"),trigger:(a,e)=>u("/api/attacks/trigger",{method:"POST",body:JSON.stringify({ip:a,service:e})}),getBanned:()=>u("/api/attacks/banned"),ban:(a,e)=>u("/api/attacks/ban",{method:"POST",body:JSON.stringify({ip:a,reason:e})}),unban:a=>u(`/api/attacks/ban/${encodeURIComponent(a)}`,{method:"DELETE"})}};class G{constructor(){this.ctx=null,this.enabled=localStorage.getItem("pisentinel_sound")==="true"}init(){if(!this.ctx&&typeof window<"u"){const e=window.AudioContext||window.webkitAudioContext;e&&(this.ctx=new e)}}toggle(){return this.enabled=!this.enabled,localStorage.setItem("pisentinel_sound",this.enabled?"true":"false"),this.enabled&&this.playBeep(880,.08,"sine"),this.enabled}playBeep(e=440,s=.1,n="sine",i=.05){if(this.enabled)try{if(this.init(),this.ctx&&this.ctx.state==="suspended"&&this.ctx.resume(),!this.ctx)return;const r=this.ctx.createOscillator(),l=this.ctx.createGain();r.type=n,r.frequency.setValueAtTime(e,this.ctx.currentTime),l.gain.setValueAtTime(i,this.ctx.currentTime),l.gain.exponentialRampToValueAtTime(1e-4,this.ctx.currentTime+s),r.connect(l),l.connect(this.ctx.destination),r.start(),r.stop(this.ctx.currentTime+s)}catch{}}playAttackAlert(){this.enabled&&(this.playBeep(880,.12,"triangle",.08),setTimeout(()=>{this.playBeep(1174,.18,"triangle",.06)},120))}playBan(){this.enabled&&(this.playBeep(320,.15,"sawtooth",.08),setTimeout(()=>{this.playBeep(180,.25,"sawtooth",.08)},100))}playSuccess(){this.enabled&&(this.playBeep(523.25,.08,"sine",.05),setTimeout(()=>{this.playBeep(659.25,.12,"sine",.05)},90))}}const v=new G,t={user:null,authConfig:null,activeTab:"radar",telemetry:null,summary:null,ports:[],portScore:100,riskBreakdown:{},tools:[],attacks:[],bannedIps:[],wsConnected:!1,soundEnabled:v.enabled,ws:null},S=document.getElementById("app");function d(a,e="info"){let s=document.querySelector(".toast-container");s||(s=document.createElement("div"),s.className="toast-container",document.body.appendChild(s));const n=document.createElement("div");n.className=`toast ${e}`,n.innerHTML=`
     <span class="pulse-dot ${e==="error"?"danger":e==="success"?"":"warning"}"></span>
     <span>${a}</span>
-  `,s.appendChild(n),setTimeout(()=>{n.style.opacity="0",n.style.transform="translateX(40px)",n.style.transition="all 0.3s ease",setTimeout(()=>n.remove(),300)},4e3)}function H(a){try{return new Date(a).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}catch{return"Récemment"}}function F(a){if(!a||a.length!==2)return"🌐";const e=a.toUpperCase().split("").map(s=>127397+s.charCodeAt(0));return String.fromCodePoint(...e)}async function O(){W();try{t.authConfig=await c.auth.getConfig()}catch(e){console.warn("Failed to load auth config:",e)}if(y.getToken())try{const e=await c.auth.getMe();t.user=e.user,await C(),w(),I();return}catch{y.removeToken()}E()}window.addEventListener("pisentinel:unauthorized",()=>{t.user=null,t.ws&&(t.ws.close(),t.ws=null),E()});async function C(){try{const[a,e,s,n,i]=await Promise.all([c.system.getSummary().catch(()=>null),c.ports.getPorts().catch(()=>({ports:[],score:100,risk_breakdown:{}})),c.tools.getTools().catch(()=>[]),c.attacks.getAttacks().catch(()=>({recent_attacks:[]})),c.attacks.getBanned().catch(()=>({banned:[]}))]);t.summary=a,t.ports=e.ports||[],t.portScore=e.score||100,t.riskBreakdown=e.risk_breakdown||{},t.tools=s||[],t.attacks=n.recent_attacks||[],t.bannedIps=i.banned||[]}catch(a){console.error("Error loading initial data:",a)}}function w(){const a=y.getToken();if(!a)return;const e=window.location.protocol==="https:"?"wss:":"ws:",s=j(),n=`${e}//${window.location.host}${s}/api/ws/telemetry?token=${encodeURIComponent(a)}`;t.ws=new WebSocket(n),t.ws.onopen=()=>{t.wsConnected=!0,D()},t.ws.onmessage=i=>{try{const r=JSON.parse(i.data);r.type==="telemetry"?(t.telemetry=r.data,Z()):r.type==="attack_event"&&Q(r.data)}catch(r){console.error("WS parse error:",r)}},t.ws.onclose=()=>{t.wsConnected=!1,D(),t.user&&setTimeout(w,4e3)}}function Q(a){var e;t.attacks.unshift(a),t.attacks.length>50&&t.attacks.pop(),v.playAttackAlert(),d(`Alerte Attaque: ${a.type} depuis ${a.ip} (${((e=a.geo)==null?void 0:e.country)||"Inconnu"})`,"error"),t.activeTab==="radar"&&(T(),B())}function W(){S.innerHTML=`
+  `,s.appendChild(n),setTimeout(()=>{n.style.opacity="0",n.style.transform="translateX(40px)",n.style.transition="all 0.3s ease",setTimeout(()=>n.remove(),300)},4e3)}function F(a){try{return new Date(a).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}catch{return"Récemment"}}function H(a){if(!a||a.length!==2)return"🌐";const e=a.toUpperCase().split("").map(s=>127397+s.charCodeAt(0));return String.fromCodePoint(...e)}async function O(){W();try{t.authConfig=await c.auth.getConfig()}catch(e){console.warn("Failed to load auth config:",e)}if(y.getToken())try{const e=await c.auth.getMe();t.user=e.user,await C(),w(),I();return}catch{y.removeToken()}E()}window.addEventListener("pisentinel:unauthorized",()=>{t.user=null,t.ws&&(t.ws.close(),t.ws=null),E()});async function C(){try{const[a,e,s,n,i]=await Promise.all([c.system.getSummary().catch(()=>null),c.ports.getPorts().catch(()=>({ports:[],score:100,risk_breakdown:{}})),c.tools.getTools().catch(()=>[]),c.attacks.getAttacks().catch(()=>({recent_attacks:[]})),c.attacks.getBanned().catch(()=>({banned:[]}))]);t.summary=a,t.ports=e.ports||[],t.portScore=e.score||100,t.riskBreakdown=e.risk_breakdown||{},t.tools=s||[],t.attacks=n.recent_attacks||[],t.bannedIps=i.banned||[]}catch(a){console.error("Error loading initial data:",a)}}function w(){const a=y.getToken();if(!a)return;const e=window.location.protocol==="https:"?"wss:":"ws:",s=j(),n=`${e}//${window.location.host}${s}/api/ws/telemetry?token=${encodeURIComponent(a)}`;t.ws=new WebSocket(n),t.ws.onopen=()=>{t.wsConnected=!0,D()},t.ws.onmessage=i=>{try{const r=JSON.parse(i.data);r.type==="telemetry"?(t.telemetry=r.data,Z()):r.type==="attack_event"&&Q(r.data)}catch(r){console.error("WS parse error:",r)}},t.ws.onclose=()=>{t.wsConnected=!1,D(),t.user&&setTimeout(w,4e3)}}function Q(a){var e;t.attacks.unshift(a),t.attacks.length>50&&t.attacks.pop(),v.playAttackAlert(),d(`Alerte Attaque: ${a.type} depuis ${a.ip} (${((e=a.geo)==null?void 0:e.country)||"Inconnu"})`,"error"),t.activeTab==="radar"&&(T(),B())}function W(){S.innerHTML=`
     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; gap:1.5rem;">
       <div class="brand-logo" style="width:64px; height:64px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -397,11 +397,11 @@
                     <tr>
                       <td class="port-num" style="color:var(--crimson);">${e.ip}</td>
                       <td>
-                        <span style="font-size:1.1rem; margin-right:0.4rem;">${F((s=e.geo)==null?void 0:s.country_code)}</span>
+                        <span style="font-size:1.1rem; margin-right:0.4rem;">${H((s=e.geo)==null?void 0:s.country_code)}</span>
                         ${((n=e.geo)==null?void 0:n.country)||"Inconnu"} (${((i=e.geo)==null?void 0:i.city)||"N/A"})
                       </td>
                       <td style="color:var(--text-muted);">${e.reason}</td>
-                      <td style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">${H(e.timestamp)}</td>
+                      <td style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">${F(e.timestamp)}</td>
                       <td style="text-align:right;">
                         <button class="btn btn-outline unban-btn" data-ip="${e.ip}" style="padding:0.35rem 0.75rem; font-size:0.75rem;">
                           Débloquer
@@ -426,7 +426,7 @@
     <div class="attack-item">
       <div class="attack-meta">
         <span class="attack-country-flag" title="${((s=e.geo)==null?void 0:s.country)||"Inconnu"}">
-          ${F((n=e.geo)==null?void 0:n.country_code)}
+          ${H((n=e.geo)==null?void 0:n.country_code)}
         </span>
         <div>
           <div class="attack-ip">${e.ip}</div>
@@ -436,7 +436,7 @@
       <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:0.35rem;">
         <span class="attack-target">${e.service||"Port inconnu"}</span>
         <div style="display:flex; align-items:center; gap:0.5rem;">
-          <span class="attack-time">${H(e.timestamp)}</span>
+          <span class="attack-time">${F(e.timestamp)}</span>
           <button class="btn btn-danger quick-ban-btn" data-ip="${e.ip}" style="padding:0.2rem 0.5rem; font-size:0.7rem;">
             Bloquer
           </button>
@@ -561,8 +561,8 @@
                 <div class="tool-card-title">${e.name}</div>
               </div>
               <span class="tool-status-badge ${e.status}">
-                <span class="pulse-dot ${e.status==="active"?"":e.status==="not_installed"?"danger":"warning"}"></span>
-                ${e.status==="active"?"ACTIF":e.status==="not_installed"?"NON INSTALLÉ":"ARRÊTÉ"}
+                <span class="pulse-dot ${e.status==="active"?"":e.status==="not_installed"?"danger":e.status==="not_applicable"?"cyan":"warning"}"></span>
+                ${e.status==="active"?"ACTIF":e.status==="not_installed"?"NON INSTALLÉ":e.status==="not_applicable"?"PRÊT":"ARRÊTÉ"}
               </span>
             </div>
             <p class="tool-desc" style="margin-top:0.85rem;">
@@ -588,7 +588,7 @@
                   `}
                 `:`
                   <span style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono);">
-                    Outil binaire exécutable &bull; Prêt
+                    ${e.id==="iptables"?"🛡️ Filtrage actif via le noyau Linux & UFW":"🔍 Outil d'analyse &bull; Prêt à l'exécution"}
                   </span>
                 `}
               </div>

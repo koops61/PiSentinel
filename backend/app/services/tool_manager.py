@@ -71,14 +71,29 @@ SECURITY_TOOLS_CATALOG = [
     {
         "id": "iptables",
         "name": "iptables / Netfilter",
-        "service_name": "netfilter-persistent",
+        "service_name": None,
         "binary": "iptables",
         "category": "Filtrage Noyau",
-        "description": "Système de filtrage de paquets natif du noyau Linux pour un contrôle granulaire du trafic.",
-        "apt_package": "iptables iptables-persistent",
+        "description": "Système de filtrage de paquets natif du noyau Linux pour un contrôle granulaire du trafic (piloté par UFW).",
+        "apt_package": "iptables",
         "recommended": False
     }
 ]
+
+def check_service_exists(service_name: str) -> bool:
+    if not service_name or platform.system() != "Linux":
+        return False
+    try:
+        res = subprocess.run(
+            ["systemctl", "status", service_name],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=2
+        )
+        return res.returncode != 4 and "could not be found" not in res.stderr
+    except Exception:
+        return False
 
 def check_service_status(service_name: str) -> str:
     if not service_name:
@@ -99,7 +114,7 @@ def check_service_status(service_name: str) -> str:
             return "active"
         if status in ("inactive", "failed"):
             return status
-        return "stopped"
+        return "not_applicable"
     except Exception:
         return "unknown"
 
@@ -126,17 +141,25 @@ def get_installed_security_tools() -> List[Dict[str, Any]]:
             if tool["id"] in ("ufw", "fail2ban", "iptables"):
                 binary_exists = True
                 active_status = "active"
-            elif tool["id"] == "lynis":
+                can_control = tool["id"] in ("ufw", "fail2ban")
+            elif tool["id"] in ("lynis", "rkhunter"):
                 binary_exists = True
                 active_status = "not_applicable"
+                can_control = False
             else:
                 binary_exists = False
                 active_status = "not_installed"
+                can_control = False
         else:
-            if binary_exists:
+            if tool["id"] == "iptables":
+                active_status = "active" if binary_exists else "not_installed"
+                can_control = False
+            elif binary_exists:
                 active_status = check_service_status(tool["service_name"])
+                can_control = tool["service_name"] is not None and check_service_exists(tool["service_name"])
             else:
                 active_status = "not_installed"
+                can_control = False
 
         results.append({
             "id": tool["id"],
@@ -147,7 +170,7 @@ def get_installed_security_tools() -> List[Dict[str, Any]]:
             "recommended": tool["recommended"],
             "is_installed": binary_exists,
             "status": active_status,
-            "can_control_service": tool["service_name"] is not None and binary_exists
+            "can_control_service": can_control
         })
 
     return results

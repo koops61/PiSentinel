@@ -1046,8 +1046,8 @@ function renderToolsTab() {
                 <div class="tool-card-title">${tool.name}</div>
               </div>
               <span class="tool-status-badge ${tool.status}">
-                <span class="pulse-dot ${tool.status === 'active' ? '' : (tool.status === 'not_installed' ? 'danger' : 'warning')}"></span>
-                ${tool.status === 'active' ? 'ACTIF' : (tool.status === 'not_installed' ? 'NON INSTALLÉ' : 'ARRÊTÉ')}
+                <span class="pulse-dot ${tool.status === 'active' ? '' : (tool.status === 'not_installed' ? 'danger' : (tool.status === 'not_applicable' ? 'cyan' : 'warning'))}"></span>
+                ${tool.status === 'active' ? 'ACTIF' : (tool.status === 'not_installed' ? 'NON INSTALLÉ' : (tool.status === 'not_applicable' ? 'PRÊT' : 'ARRÊTÉ'))}
               </span>
             </div>
             <p class="tool-desc" style="margin-top:0.85rem;">
@@ -1073,7 +1073,7 @@ function renderToolsTab() {
                   `}
                 ` : `
                   <span style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono);">
-                    Outil binaire exécutable &bull; Prêt
+                    ${tool.id === 'iptables' ? '🛡️ Filtrage actif via le noyau Linux & UFW' : '🔍 Outil d\'analyse &bull; Prêt à l\'exécution'}
                   </span>
                 `}
               </div>
