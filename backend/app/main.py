@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 
 from app.core.config import settings
 from app.services.attack_monitor import attack_monitor
@@ -89,8 +89,11 @@ if os.path.exists(frontend_dist):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
         app.mount("/sentinel/assets", StaticFiles(directory=assets_dir), name="sentinel_assets")
 
-    @app.get("/")
     @app.get("/sentinel")
+    async def redirect_sentinel():
+        return RedirectResponse(url="/sentinel/", status_code=301)
+
+    @app.get("/")
     @app.get("/sentinel/")
     async def serve_index():
         index_file = os.path.join(frontend_dist, "index.html")

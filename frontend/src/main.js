@@ -1298,5 +1298,9 @@ function renderSystemTab() {
   `;
 }
 
-// Start Application
-window.addEventListener('DOMContentLoaded', init);
+// Start Application immediately or on DOM ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
