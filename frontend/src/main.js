@@ -1276,7 +1276,7 @@ async function openAuditModal(toolId) {
 
   const modal = document.createElement('dialog');
   modal.id = 'auditReportModal';
-  modal.className = 'soc-modal';
+  modal.className = 'soc-modal audit-modal';
 
   modal.innerHTML = `
     <div class="modal-content audit-dialog-content">

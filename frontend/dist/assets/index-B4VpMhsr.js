@@ -655,7 +655,7 @@
           ${t.compliant?"ACTIF":"À DURCIR"}
         </span>
       </div>
-    `).join("")}catch(n){console.error("Error loading hardening checks:",n)}}async function X(n){var i;try{(i=v.playClick)==null||i.call(v)}catch{}const e=document.getElementById("auditReportModal");e&&e.remove();const t=document.createElement("dialog");t.id="auditReportModal",t.className="soc-modal",t.innerHTML=`
+    `).join("")}catch(n){console.error("Error loading hardening checks:",n)}}async function X(n){var i;try{(i=v.playClick)==null||i.call(v)}catch{}const e=document.getElementById("auditReportModal");e&&e.remove();const t=document.createElement("dialog");t.id="auditReportModal",t.className="soc-modal audit-modal",t.innerHTML=`
     <div class="modal-content audit-dialog-content">
       <div class="modal-header">
         <h3 class="modal-title">Chargement du rapport...</h3>

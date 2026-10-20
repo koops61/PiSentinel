@@ -260,7 +260,8 @@ class AuditService:
                 "title": "Permissions strictes sur /etc/shadow",
                 "category": "Système & Fichiers",
                 "desc": "Garantit que seuls root/shadow ont accès aux empreintes de mots de passe (chmod 640 ou 600).",
-                "sysctl_key": None
+                "sysctl_key": None,
+                "expected": "0640 / 0600"
             }
         ]
 
