@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 
 from app.core.config import settings
 from app.services.attack_monitor import attack_monitor
-from app.routers import auth, system, ports, security_tools, attacks, ws
+from app.routers import auth, system, ports, security_tools, attacks, ws, audit
 
 logging.basicConfig(
     level=logging.INFO,
@@ -69,6 +69,7 @@ app.include_router(system.router)
 app.include_router(ports.router)
 app.include_router(security_tools.router)
 app.include_router(attacks.router)
+app.include_router(audit.router)
 app.include_router(ws.router)
 
 @app.get("/health")

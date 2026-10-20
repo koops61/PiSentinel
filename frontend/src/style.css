@@ -1165,6 +1165,39 @@ dialog.soc-modal::backdrop {
 .toast.error { border-color: var(--crimson); }
 .toast.info { border-color: var(--cyan-neon); }
 
+/* Hardening & Audit Cards */
+.hardening-card {
+  background: rgba(17, 26, 51, 0.6);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-sm);
+  padding: 1rem 1.15rem;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: all 0.2s ease;
+}
+
+.hardening-card.compliant {
+  border-left: 3px solid var(--emerald);
+}
+
+.hardening-card.non-compliant {
+  border-left: 3px solid var(--amber);
+}
+
+.hardening-card:hover {
+  background: rgba(17, 26, 51, 0.85);
+  border-color: rgba(0, 242, 254, 0.3);
+}
+
+/* Modal styling adjustments for Audit reports */
+.audit-dialog-content {
+  max-width: 680px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .soc-header {

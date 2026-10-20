@@ -97,5 +97,11 @@ export const api = {
     unban: (ip) => apiFetch(`/api/attacks/ban/${encodeURIComponent(ip)}`, {
       method: 'DELETE'
     })
+  },
+  audit: {
+    getReport: () => apiFetch('/api/audit/report'),
+    scan: (toolId) => apiFetch(`/api/audit/scan/${toolId}`, { method: 'POST' }),
+    getOptimizations: () => apiFetch('/api/audit/optimizations'),
+    optimize: () => apiFetch('/api/audit/optimize', { method: 'POST' })
   }
 };

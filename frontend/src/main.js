@@ -1072,9 +1072,20 @@ function renderToolsTab() {
                     </button>
                   `}
                 ` : `
-                  <span style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono);">
-                    ${tool.id === 'iptables' ? '🛡️ Filtrage actif via le noyau Linux & UFW' : '🔍 Outil d\'analyse &bull; Prêt à l\'exécution'}
-                  </span>
+                  ${(tool.id === 'lynis' || tool.id === 'rkhunter') ? `
+                    <div style="display:flex; gap:0.4rem; width:100%;">
+                      <button class="btn btn-primary run-audit-btn" data-tool="${tool.id}" style="flex:1; justify-content:center; padding:0.4rem 0.5rem; font-size:0.75rem;">
+                        🚀 Lancer Scan
+                      </button>
+                      <button class="btn btn-outline view-audit-btn" data-tool="${tool.id}" style="flex:1; justify-content:center; padding:0.4rem 0.5rem; font-size:0.75rem;">
+                        📋 Rapport
+                      </button>
+                    </div>
+                  ` : `
+                    <span style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono);">
+                      ${tool.id === 'iptables' ? '🛡️ Filtrage actif via le noyau Linux & UFW' : '🔍 Outil d\'analyse &bull; Prêt à l\'exécution'}
+                    </span>
+                  `}
                 `}
               </div>
             ` : `
@@ -1091,7 +1102,30 @@ function renderToolsTab() {
         </div>
       `).join('')}
     </div>
+
+    <!-- Section Durcissement & Optimisation Système (Hardening) -->
+    <div class="panel" style="margin-top:2.5rem;">
+      <div class="panel-header" style="flex-wrap:wrap; gap:1rem;">
+        <div class="panel-title">
+          🛡️ Optimiseur de Sécurité & Durcissement Système (1-Clic)
+        </div>
+        <button id="applyHardeningBtn" class="btn btn-primary">
+          ⚡ Appliquer le Durcissement Recommandé
+        </button>
+      </div>
+      <div class="panel-body">
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1.25rem;">
+          Active automatiquement les protections du noyau Linux (sysctl) et sécurise les permissions système recommandées par Lynis pour bloquer le SYN-Flood, le spoofing d'IP et fermer les vecteurs d'attaque.
+        </p>
+        <div id="hardeningChecksContainer" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1rem;">
+          <div style="color:var(--text-dim); font-family:var(--font-mono); font-size:0.85rem;">Chargement des paramètres de sécurité...</div>
+        </div>
+      </div>
+    </div>
   `;
+
+  // Load and render hardening checks
+  loadHardeningChecks();
 
   // Attach control service listeners
   document.querySelectorAll('.tool-action-btn').forEach(btn => {
@@ -1131,6 +1165,59 @@ function renderToolsTab() {
     });
   });
 
+  // Attach Run Audit listeners
+  document.querySelectorAll('.run-audit-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const toolId = btn.dataset.tool;
+      try {
+        btn.disabled = true;
+        btn.innerText = 'Scan en cours...';
+        const res = await api.audit.scan(toolId);
+        sounds.playSuccess();
+        showToast(res.message, 'info');
+      } catch (err) {
+        sounds.playAlert();
+        showToast(err.message, 'error');
+      } finally {
+        setTimeout(() => {
+          btn.disabled = false;
+          btn.innerText = '🚀 Lancer Scan';
+        }, 5000);
+      }
+    });
+  });
+
+  // Attach View Audit Report listeners
+  document.querySelectorAll('.view-audit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const toolId = btn.dataset.tool;
+      openAuditModal(toolId);
+    });
+  });
+
+  // Attach Apply Hardening listener
+  const applyBtn = document.getElementById('applyHardeningBtn');
+  if (applyBtn) {
+    applyBtn.addEventListener('click', async () => {
+      try {
+        applyBtn.disabled = true;
+        applyBtn.innerText = 'Application en cours...';
+        const res = await api.audit.optimize();
+        sounds.playSuccess();
+        showToast(res.message, 'success');
+        await loadHardeningChecks();
+        state.summary = await api.system.getSummary();
+        updateSummaryHeader();
+      } catch (err) {
+        sounds.playAlert();
+        showToast(err.message, 'error');
+      } finally {
+        applyBtn.disabled = false;
+        applyBtn.innerText = '⚡ Appliquer le Durcissement Recommandé';
+      }
+    });
+  }
+
   // Refresh
   document.getElementById('refreshToolsBtn').addEventListener('click', async () => {
     state.tools = await api.tools.getTools();
@@ -1138,6 +1225,143 @@ function renderToolsTab() {
     showToast('Statut des outils actualisé.', 'info');
   });
 }
+
+async function loadHardeningChecks() {
+  try {
+    const checks = await api.audit.getOptimizations();
+    const container = document.getElementById('hardeningChecksContainer');
+    if (!container) return;
+    container.innerHTML = checks.map(c => `
+      <div class="hardening-card ${c.compliant ? 'compliant' : 'non-compliant'}">
+        <div>
+          <div style="font-size:0.72rem; color:var(--cyan-neon); font-family:var(--font-mono); text-transform:uppercase;">${c.category}</div>
+          <div style="font-family:var(--font-cyber); font-weight:700; font-size:0.95rem; margin-top:0.2rem;">${c.title}</div>
+          <p style="color:var(--text-muted); font-size:0.8rem; margin-top:0.35rem; line-height:1.4;">${c.desc}</p>
+        </div>
+        <span class="tool-status-badge ${c.compliant ? 'active' : 'stopped'}">
+          <span class="pulse-dot ${c.compliant ? '' : 'warning'}"></span>
+          ${c.compliant ? 'ACTIF' : 'À DURCIR'}
+        </span>
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Error loading hardening checks:', err);
+  }
+}
+
+async function openAuditModal(toolId) {
+  sounds.playClick();
+  const existingModal = document.getElementById('auditReportModal');
+  if (existingModal) existingModal.remove();
+
+  const modal = document.createElement('dialog');
+  modal.id = 'auditReportModal';
+  modal.className = 'soc-modal';
+
+  modal.innerHTML = `
+    <div class="modal-content audit-dialog-content">
+      <div class="modal-header">
+        <h3 class="modal-title">Chargement du rapport...</h3>
+        <button class="close-btn" id="closeAuditModalBtn">&times;</button>
+      </div>
+      <div id="auditModalBody" style="padding:1rem 0;">
+        <div style="color:var(--text-dim); font-family:var(--font-mono); text-align:center;">
+          Lecture des journaux système de ${toolId.toUpperCase()}...
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.showModal();
+
+  document.getElementById('closeAuditModalBtn').addEventListener('click', () => {
+    modal.close();
+    modal.remove();
+  });
+
+  try {
+    const reportData = await api.audit.getReport();
+    const body = document.getElementById('auditModalBody');
+    const title = modal.querySelector('.modal-title');
+
+    if (toolId === 'lynis') {
+      const lynis = reportData.lynis;
+      title.innerHTML = `🛡️ Rapport d'Audit Lynis`;
+      if (!lynis.available) {
+        body.innerHTML = `<p style="color:var(--amber);">${lynis.message || 'Aucun rapport disponible.'}</p>`;
+        return;
+      }
+      body.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); padding:1rem; border-radius:var(--radius-sm); margin-bottom:1.25rem;">
+          <div>
+            <div style="font-size:0.8rem; color:var(--text-dim); text-transform:uppercase;">Score de Durcissement (Hardening Index)</div>
+            <div style="font-family:var(--font-cyber); font-size:2.4rem; font-weight:700; color:${lynis.hardening_index >= 75 ? 'var(--emerald)' : (lynis.hardening_index >= 60 ? 'var(--cyan-neon)' : 'var(--amber)')};">
+              ${lynis.hardening_index} <span style="font-size:1.1rem; color:var(--text-muted);">/ 100</span>
+            </div>
+          </div>
+          <div style="text-align:right; font-family:var(--font-mono); font-size:0.8rem; color:var(--text-muted);">
+            <div>Dernier Scan : ${lynis.scan_date}</div>
+            <div style="color:var(--cyan-neon); margin-top:0.25rem;">${lynis.suggestions_count} suggestions d'optimisation</div>
+          </div>
+        </div>
+
+        <h4 style="font-family:var(--font-cyber); font-size:1.05rem; text-transform:uppercase; color:var(--cyan-neon); margin-bottom:0.75rem;">
+          Recommandations & Suggestions Prioritaires
+        </h4>
+        <div style="display:flex; flex-direction:column; gap:0.6rem; max-height:300px; overflow-y:auto;" class="custom-scroll">
+          ${lynis.suggestions.map(s => `
+            <div style="background:rgba(17,26,51,0.7); border:1px solid var(--panel-border); border-left:3px solid var(--cyan-neon); border-radius:var(--radius-sm); padding:0.65rem 0.85rem;">
+              <span style="font-family:var(--font-mono); font-size:0.7rem; color:var(--amber); background:rgba(255,170,0,0.15); padding:1px 5px; border-radius:3px;">${s.id}</span>
+              <span style="font-size:0.85rem; margin-left:0.4rem; color:var(--text-main);">${s.desc}</span>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else if (toolId === 'rkhunter') {
+      const rk = reportData.rkhunter;
+      title.innerHTML = `🔍 Rapport Rootkit Hunter`;
+      if (!rk.available) {
+        body.innerHTML = `<p style="color:var(--amber);">${rk.message || 'Aucun rapport disponible.'}</p>`;
+        return;
+      }
+      body.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); padding:1rem; border-radius:var(--radius-sm); margin-bottom:1.25rem;">
+          <div>
+            <div style="font-size:0.8rem; color:var(--text-dim); text-transform:uppercase;">État du Système</div>
+            <div style="font-family:var(--font-cyber); font-size:1.6rem; font-weight:700; color:${rk.warnings_count === 0 ? 'var(--emerald)' : 'var(--amber)'};">
+              ${rk.warnings_count === 0 ? 'Système Sain & Conforme' : `${rk.warnings_count} Avertissement(s) Détecté(s)`}
+            </div>
+          </div>
+          <div style="text-align:right; font-family:var(--font-mono); font-size:0.8rem; color:var(--text-muted);">
+            <div>Dernier Scan : ${rk.scan_date}</div>
+          </div>
+        </div>
+
+        <h4 style="font-family:var(--font-cyber); font-size:1.05rem; text-transform:uppercase; color:var(--amber); margin-bottom:0.75rem;">
+          Analyse des Avertissements
+        </h4>
+        <div style="display:flex; flex-direction:column; gap:0.75rem; max-height:300px; overflow-y:auto;" class="custom-scroll">
+          ${rk.warnings.length === 0 ? `
+            <div style="color:var(--emerald); font-size:0.9rem;">Aucun rootkit ni altération suspecte trouvée.</div>
+          ` : rk.warnings.map(w => `
+            <div style="background:rgba(17,26,51,0.7); border:1px solid rgba(255,170,0,0.3); border-left:3px solid ${w.is_false_positive ? 'var(--cyan-neon)' : 'var(--crimson)'}; border-radius:var(--radius-sm); padding:0.75rem 0.95rem;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+                <span style="font-family:var(--font-mono); font-size:0.75rem; color:${w.is_false_positive ? 'var(--cyan-neon)' : 'var(--crimson)'};">
+                  ${w.is_false_positive ? '✅ Faux Positif Connu (Normal sur Debian / RPi)' : '⚠️ Alerte de Sécurité'}
+                </span>
+              </div>
+              <div style="font-size:0.85rem; color:var(--text-main);">${w.explanation}</div>
+              <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim); margin-top:0.35rem; word-break:break-all;">${w.raw}</div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+  } catch (err) {
+    document.getElementById('auditModalBody').innerHTML = `<p style="color:var(--crimson);">Erreur: ${err.message}</p>`;
+  }
+}
+
 
 // ==========================================================================
 // Tab 4: Télémétrie Matérielle & Santé RPi
