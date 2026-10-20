@@ -84,14 +84,46 @@ def health_check():
 frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend", "dist")
 
 if os.path.exists(frontend_dist):
-    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+    assets_dir = os.path.join(frontend_dist, "assets")
+    if os.path.exists(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+        app.mount("/sentinel/assets", StaticFiles(directory=assets_dir), name="sentinel_assets")
+
+    @app.get("/")
+    @app.get("/sentinel")
+    @app.get("/sentinel/")
+    async def serve_index():
+        index_file = os.path.join(frontend_dist, "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+        return {"detail": "PiSentinel frontend dist missing"}
 
     @app.get("/{full_path:path}")
     async def serve_spa(full_path: str):
-        file_path = os.path.join(frontend_dist, full_path)
-        if os.path.isfile(file_path):
+        clean_path = full_path
+        if clean_path.startswith("sentinel/"):
+            clean_path = clean_path[len("sentinel/"):]
+        elif clean_path == "sentinel":
+            clean_path = ""
+
+        file_path = os.path.join(frontend_dist, clean_path)
+        if clean_path and os.path.isfile(file_path):
             return FileResponse(file_path)
-        return FileResponse(os.path.join(frontend_dist, "index.html"))
+
+        index_file = os.path.join(frontend_dist, "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+        return {"detail": "Not Found"}
+else:
+    @app.get("/")
+    @app.get("/sentinel")
+    @app.get("/sentinel/")
+    async def serve_missing_frontend():
+        return {
+            "service": "PiSentinel Security Hub API",
+            "status": "online",
+            "message": "Le dossier frontend/dist est manquant. Veuillez récupérer la dernière version avec git pull."
+        }
 
 if __name__ == "__main__":
     import uvicorn
