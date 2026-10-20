@@ -1,9 +1,10 @@
 # 🛡️ PiSentinel — All-in-One Raspberry Pi SOC & Security Hub
 
+[![Release](https://img.shields.io/badge/Release-v1.0.0-00f2fe.svg)](https://github.com/koops61/PiSentinel/releases)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-Modern%20API-009688.svg)](https://fastapi.tiangolo.com/)
 [![Vite](https://img.shields.io/badge/Frontend-Vite%20%2B%20CyberSOC-646CFF.svg)](https://vitejs.dev/)
-[![Security](https://img.shields.io/badge/Auth-Google%20OAuth%20%2B%20Whitelist-00f2fe.svg)](#authentification-google--sécurité)
+[![Security](https://img.shields.io/badge/Auth-Google%20OAuth%20%2B%20Whitelist-00f2fe.svg)](#-authentification-google--whitelist)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 **PiSentinel** est une plateforme tout-en-un moderne, ultra-rapide et sécurisée conçue pour transformer votre **Raspberry Pi** en un véritable centre d'opérations de sécurité (**SOC - Security Operations Center**).
@@ -19,12 +20,12 @@ Accessible depuis une interface web de style Cyberpunk / Glassmorphism, elle vou
 - **Stream WebSockets bidirectionnel** analysant en direct les journaux `/var/log/auth.log`, `journalctl` et `fail2ban.log`.
 - Détection des **attaques par force brute SSH**, scans de ports et sondes de vulnérabilités web.
 - **Bouton de Blocage Immédiat en 1 Clic** (`UFW insert deny from <IP>`).
-- Bouton de **Simulation d'Attaque** pour tester immédiatement vos alertes et défenses.
+- Bouton de **Simulation d'Attaque** pour tester immédiatement vos alertes et notifications tactiques sonores.
 - Synthétiseur audio Web Audio API pour les alertes tactiques (chimes d'alerte, son de bannissement).
 
 ### 2. 🔍 Audit & Scanner des Ports Ouverts
 - Cartographie instantanée de tous les ports réseau en écoute sur votre Raspberry Pi (sockets TCP/UDP).
-- Détection de l'adresse de liaison : distinction entre écoute locale sécurisée (`127.0.0.1`) et exposition externe dangereuse (`0.0.0.0`).
+- Détection de l'adresse de liaison : distinction entre écoute locale sécurisée (`127.0.0.1`) et exposition externe (`0.0.0.0`).
 - **Évaluation automatique du niveau de risque** :
   - 🔴 **Critique** : Telnet (23), FTP en clair (21), SMB (445), Redis sans mot de passe (6379), etc.
   - 🟠 **Élevé** : Base de données MySQL/Postgres exposée publiquement, HTTP non chiffré (80), VNC (5900).
@@ -61,104 +62,113 @@ Accessible depuis une interface web de style Cyberpunk / Glassmorphism, elle vou
 
 ---
 
-## 🏗️ Architecture du Projet
+## 🌐 Cohabitation avec un Site Web Existant
 
-```
-raspberry-allin1/
-├── backend/
-│   ├── app/
-│   │   ├── core/
-│   │   │   ├── config.py             # Gestion Pydantic des variables .env & Whitelist
-│   │   │   ├── security.py           # Tokens JWT, hachage bcrypt, vérification Google ID
-│   │   │   └── auth.py               # Dépendances de routes protégées FastAPI
-│   │   ├── routers/
-│   │   │   ├── auth.py               # Endpoints Google OAuth & login admin
-│   │   │   ├── system.py             # Télémétrie hardware & score de santé global
-│   │   │   ├── ports.py              # Analyse et audit des ports ouverts
-│   │   │   ├── security_tools.py     # Contrôle et installation des outils Linux
-│   │   │   ├── attacks.py            # Flux des attaques, bannissement & déblocage IP
-│   │   │   └── ws.py                 # WebSocket pour flux d'attaques et métriques temps réel
-│   │   ├── services/
-│   │   │   ├── port_scanner.py       # Scanner de sockets & matrice des vulnérabilités
-│   │   │   ├── tool_manager.py       # Gestionnaire système systemctl / apt
-│   │   │   ├── attack_monitor.py     # Tail des logs auth.log/fail2ban + moteur de simulation
-│   │   │   └── geoip.py              # Résolution géographique des adresses IP
-│   │   └── main.py                   # Serveur FastAPI + hébergement SPA statique
-│   ├── requirements.txt
-│   ├── .env.example
-│   └── .env
-├── frontend/
-│   ├── index.html                    # Point d'entrée HTML5
-│   ├── package.json
-│   ├── vite.config.js
-│   ├── dist/                         # Bundle de production compilé (prêt à servir)
-│   └── src/
-│       ├── main.js                   # Contrôleur d'état, WebSockets et rendu des vues
-│       ├── style.css                 # Système de design Cyber-SOC Glassmorphism
-│       └── utils/
-│           ├── api.js                # Client API fetch authentifié
-│           └── sound.js              # Synthétiseur audio Web Audio API
-├── deploy/
-│   ├── install.sh                    # Script d'installation 1 clic pour Raspberry Pi OS
-│   ├── pisentinel.service            # Service systemd pour démarrage automatique
-│   └── README.md                     # Guide pas à pas Google OAuth
-└── README.md
-```
+Si vous avez déjà un site actif sur votre Raspberry Pi (ex: WordPress, Nextcloud, site vitrine) :
+- **Le port 80 et le port 443 restent 100% réservés à votre site actuel.**
+- PiSentinel tourne sur un port interne dédié **`8443`** (`127.0.0.1:8443`), invisible depuis l'extérieur.
+- L'installation s'effectue dans **`/var/www/html/sentinel`**.
+- Le script configure **automatiquement** votre serveur web (Nginx ou Apache) pour relayer les requêtes vers `https://mon-domaine.com/sentinel/`.
 
 ---
 
-## 🚀 Démarrage Rapide
+## 🚀 Installation & Déploiement
 
-### Option A : Déploiement automatique sur Raspberry Pi
-Consultez le guide détaillé : [`deploy/README.md`](file:///e:/IA-KANIS/outil-web/raspberry-allin1/deploy/README.md).
+### Déploiement Automatique en 1 Commande (Raspberry Pi OS / Debian)
+
+Connectez-vous en SSH à votre Raspberry Pi, puis exécutez :
 
 ```bash
-cd deploy
+# 1. Cloner le projet dans /var/www/html/sentinel
+sudo git clone https://github.com/koops61/PiSentinel.git /var/www/html/sentinel
+
+# 2. Se rendre dans le dossier de déploiement et lancer l'installateur
+cd /var/www/html/sentinel/deploy
 chmod +x install.sh
 sudo ./install.sh
 ```
 
-### Option B : Lancement en local (Développement)
-
-#### 1. Lancer le Backend Python (FastAPI)
-```bash
-# Activer l'environnement virtuel
-# Sur Linux / Raspberry Pi :
-source .venv/bin/activate
-# Sur Windows :
-.\.venv\Scripts\activate
-
-# Démarrer le serveur
-cd backend
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-Le backend démarre sur `http://localhost:8000`.
-
-#### 2. Lancer le Frontend (Mode Dev avec rechargement à chaud)
-```bash
-cd frontend
-npm run dev
-```
-
-Ouvrez `http://localhost:5173`. L'API et les WebSockets sont automatiquement relayés vers le backend FastAPI.
+### 🤖 Ce que fait le script automatiquement :
+1. Installe les paquets de sécurité requis (`ufw`, `fail2ban`, `lynis`, `python3-venv`).
+2. Crée l'environnement virtuel Python isolé dans `/var/www/html/sentinel/.venv`.
+3. Génère une clé secrète aléatoire `SECRET_KEY` pour les tokens JWT.
+4. Active et démarre le démon `pisentinel.service` au démarrage de la machine.
+5. **Détecte automatiquement votre serveur web (Nginx ou Apache) :**
+   - **Sous Nginx :** Crée `/etc/nginx/snippets/pisentinel.conf`, injecte la redirection vers `127.0.0.1:8443` avec support WebSockets, valide la syntaxe et recharge Nginx.
+   - **Sous Apache :** Active les modules proxy (`mod_proxy`, `mod_proxy_wstunnel`), active la configuration `pisentinel.conf` et recharge Apache.
 
 ---
 
-## 🔑 Identifiants par Défaut (Mode Local)
+## 🔐 Configuration Google OAuth & Whitelist
 
-- **Identifiant :** `admin`
-- **Mot de passe :** `admin` (ou la valeur configurée dans `backend/.env`)
+Pour sécuriser l'accès avec votre compte Google :
 
----
+1. Rendez-vous sur la **[Google Cloud Console](https://console.cloud.google.com/)**.
+2. Créez des identifiants **OAuth 2.0 Client ID** (Type : *Application Web*).
+3. Dans **"Origines JavaScript autorisées"**, ajoutez :
+   - `https://mon-domaine.com`
+4. Éditez le fichier `.env` sur votre Raspberry Pi :
 
-## 🛡️ Configuration de la Liste Blanche Google OAuth
+```bash
+sudo nano /var/www/html/sentinel/backend/.env
+```
 
-Dans `backend/.env` :
+5. Renseignez votre Client ID et votre email administrateur :
 
 ```ini
-GOOGLE_CLIENT_ID=votre-id-google.apps.googleusercontent.com
-ALLOWED_EMAILS=mon.email@gmail.com,admin2@gmail.com
+GOOGLE_CLIENT_ID=xxxxxxxxxxxx.apps.googleusercontent.com
+ALLOWED_EMAILS=votre.email@gmail.com
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=VotreMotDePasseAdminDeSecours!
+HOST=127.0.0.1
+PORT=8443
+ROOT_PATH=/sentinel
 ```
 
-Lorsque cette option est configurée, seuls les comptes Google présents dans `ALLOWED_EMAILS` peuvent se connecter. Tout autre compte est immédiatement bloqué avec une erreur HTTP 403.
+6. Redémarrez le service :
+
+```bash
+sudo systemctl restart pisentinel
+```
+
+---
+
+## 💻 Accès au Tableau de Bord
+
+Une fois l'installation terminée, ouvrez votre navigateur :
+
+👉 **`https://mon-domaine.com/sentinel/`**
+
+*(Ou en accès direct local sur votre réseau : `http://<IP_DU_RASPBERRY>:8443/sentinel/`)*
+
+---
+
+## 🛠️ Commandes Utiles (Systemd)
+
+| Action | Commande |
+| :--- | :--- |
+| **Vérifier l'état du service** | `sudo systemctl status pisentinel` |
+| **Redémarrer le hub** | `sudo systemctl restart pisentinel` |
+| **Arrêter le hub** | `sudo systemctl stop pisentinel` |
+| **Consulter les journaux en direct** | `sudo journalctl -u pisentinel -f` |
+
+---
+
+## 💻 Développement Local (Sur PC Windows / Mac / Linux)
+
+```bash
+# 1. Démarrer le Backend Python
+python -m venv .venv
+source .venv/bin/activate  # Sur Windows: .\.venv\Scripts\activate
+pip install -r backend/requirements.txt
+cd backend && python -m uvicorn app.main:app --port 8443 --reload
+
+# 2. Démarrer le Frontend Vite
+cd frontend && npm install && npm run dev
+```
+
+---
+
+## 📄 Licence
+
+Ce projet est sous licence MIT. Libre d'utilisation et de modification pour sécuriser vos Raspberry Pi !
