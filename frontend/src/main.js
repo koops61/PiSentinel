@@ -215,7 +215,7 @@ function renderLogin() {
             </svg>
           </div>
           <h2 style="font-family:var(--font-cyber); font-size:1.8rem; letter-spacing:1px; text-transform:uppercase; color:var(--text-main);">
-            PiSentinel SOC
+            PiSentinel SOC <span class="brand-badge" style="font-size:0.65rem; vertical-align:middle;">v1.0.0</span>
           </h2>
           <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.35rem;">
             Centre de Contrôle & Sécurité Raspberry Pi
@@ -324,7 +324,7 @@ function renderApp() {
           </svg>
         </div>
         <div class="brand-text">
-          <h1>PiSentinel <span class="brand-badge">SOC RPi</span></h1>
+          <h1>PiSentinel <span class="brand-badge">v1.0.0</span></h1>
           <div class="brand-sub">${state.telemetry?.model || 'Raspberry Pi'} &bull; ${state.telemetry?.hostname || 'raspberrypi'}</div>
         </div>
       </div>
