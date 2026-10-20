@@ -1270,7 +1270,7 @@ async function loadHardeningChecks() {
 }
 
 async function openAuditModal(toolId) {
-  sounds.playClick();
+  try { sounds.playClick?.(); } catch (_) {}
   const existingModal = document.getElementById('auditReportModal');
   if (existingModal) existingModal.remove();
 
@@ -1292,12 +1292,28 @@ async function openAuditModal(toolId) {
     </div>
   `;
   document.body.appendChild(modal);
-  modal.showModal();
 
-  document.getElementById('closeAuditModalBtn').addEventListener('click', () => {
-    modal.close();
-    modal.remove();
+  // Close on backdrop click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.close();
+      modal.remove();
+    }
   });
+
+  if (typeof modal.showModal === 'function') {
+    modal.showModal();
+  } else {
+    modal.setAttribute('open', '');
+  }
+
+  const closeBtn = document.getElementById('closeAuditModalBtn');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      modal.close();
+      modal.remove();
+    });
+  }
 
   try {
     const reportData = await api.audit.getReport();

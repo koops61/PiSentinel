@@ -75,6 +75,16 @@ class SoundEffects {
       this.playBeep(659.25, 0.12, 'sine', 0.05);
     }, 90);
   }
+
+  playClick() {
+    if (!this.enabled) return;
+    this.playBeep(700, 0.03, 'sine', 0.03);
+  }
+
+  playAlert() {
+    if (!this.enabled) return;
+    this.playBeep(440, 0.1, 'triangle', 0.06);
+  }
 }
 
 export const sounds = new SoundEffects();

@@ -1,4 +1,4 @@
-(function(){const e=document.createElement("link").relList;if(e&&e.supports&&e.supports("modulepreload"))return;for(const i of document.querySelectorAll('link[rel="modulepreload"]'))s(i);new MutationObserver(i=>{for(const r of i)if(r.type==="childList")for(const o of r.addedNodes)o.tagName==="LINK"&&o.rel==="modulepreload"&&s(o)}).observe(document,{childList:!0,subtree:!0});function t(i){const r={};return i.integrity&&(r.integrity=i.integrity),i.referrerPolicy&&(r.referrerPolicy=i.referrerPolicy),i.crossOrigin==="use-credentials"?r.credentials="include":i.crossOrigin==="anonymous"?r.credentials="omit":r.credentials="same-origin",r}function s(i){if(i.ep)return;i.ep=!0;const r=t(i);fetch(i.href,r)}})();const B="pisentinel_token",f={getToken:()=>localStorage.getItem(B),setToken:n=>localStorage.setItem(B,n),removeToken:()=>localStorage.removeItem(B)},N=()=>(window.location.pathname||"").includes("/sentinel")?"/sentinel":"";async function u(n,e={}){const t=f.getToken(),s={"Content-Type":"application/json",...e.headers||{}};t&&(s.Authorization=`Bearer ${t}`);const i=N(),r=n.startsWith("http")?n:`${i}${n}`,o=await fetch(r,{...e,headers:s});if(o.status===401){f.removeToken(),window.dispatchEvent(new CustomEvent("pisentinel:unauthorized"));const m=await o.json().catch(()=>({detail:"Session expirée"}));throw new Error(m.detail||"Non autorisé")}if(!o.ok){const m=await o.json().catch(()=>({detail:`Erreur HTTP ${o.status}`}));throw new Error(m.detail||`Erreur serveur (${o.status})`)}return o.json()}const d={auth:{getConfig:()=>u("/api/auth/config"),loginGoogle:n=>u("/api/auth/google",{method:"POST",body:JSON.stringify({credential:n})}),loginLocal:(n,e)=>u("/api/auth/login",{method:"POST",body:JSON.stringify({username:n,password:e})}),getMe:()=>u("/api/auth/me"),logout:()=>u("/api/auth/logout",{method:"POST"})},system:{getStatus:()=>u("/api/system/status"),getSummary:()=>u("/api/system/summary")},ports:{getPorts:()=>u("/api/ports"),getHardeningRules:()=>u("/api/ports/hardening-rules")},tools:{getTools:()=>u("/api/tools"),control:(n,e)=>u(`/api/tools/${n}/control`,{method:"POST",body:JSON.stringify({action:e})}),install:n=>u(`/api/tools/${n}/install`,{method:"POST"})},attacks:{getAttacks:()=>u("/api/attacks"),trigger:(n,e)=>u("/api/attacks/trigger",{method:"POST",body:JSON.stringify({ip:n,service:e})}),getBanned:()=>u("/api/attacks/banned"),ban:(n,e)=>u("/api/attacks/ban",{method:"POST",body:JSON.stringify({ip:n,reason:e})}),unban:n=>u(`/api/attacks/ban/${encodeURIComponent(n)}`,{method:"DELETE"})},audit:{getReport:()=>u("/api/audit/report"),scan:n=>u(`/api/audit/scan/${n}`,{method:"POST"}),getOptimizations:()=>u("/api/audit/optimizations"),optimize:()=>u("/api/audit/optimize",{method:"POST"})}};class Q{constructor(){this.ctx=null,this.enabled=localStorage.getItem("pisentinel_sound")==="true"}init(){if(!this.ctx&&typeof window<"u"){const e=window.AudioContext||window.webkitAudioContext;e&&(this.ctx=new e)}}toggle(){return this.enabled=!this.enabled,localStorage.setItem("pisentinel_sound",this.enabled?"true":"false"),this.enabled&&this.playBeep(880,.08,"sine"),this.enabled}playBeep(e=440,t=.1,s="sine",i=.05){if(this.enabled)try{if(this.init(),this.ctx&&this.ctx.state==="suspended"&&this.ctx.resume(),!this.ctx)return;const r=this.ctx.createOscillator(),o=this.ctx.createGain();r.type=s,r.frequency.setValueAtTime(e,this.ctx.currentTime),o.gain.setValueAtTime(i,this.ctx.currentTime),o.gain.exponentialRampToValueAtTime(1e-4,this.ctx.currentTime+t),r.connect(o),o.connect(this.ctx.destination),r.start(),r.stop(this.ctx.currentTime+t)}catch{}}playAttackAlert(){this.enabled&&(this.playBeep(880,.12,"triangle",.08),setTimeout(()=>{this.playBeep(1174,.18,"triangle",.06)},120))}playBan(){this.enabled&&(this.playBeep(320,.15,"sawtooth",.08),setTimeout(()=>{this.playBeep(180,.25,"sawtooth",.08)},100))}playSuccess(){this.enabled&&(this.playBeep(523.25,.08,"sine",.05),setTimeout(()=>{this.playBeep(659.25,.12,"sine",.05)},90))}}const p=new Q,a={user:null,authConfig:null,activeTab:"radar",telemetry:null,summary:null,ports:[],portScore:100,riskBreakdown:{},tools:[],attacks:[],bannedIps:[],wsConnected:!1,soundEnabled:p.enabled,ws:null},k=()=>document.getElementById("app")||document.body;function l(n,e="info"){let t=document.querySelector(".toast-container");t||(t=document.createElement("div"),t.className="toast-container",document.body.appendChild(t));const s=document.createElement("div");s.className=`toast ${e}`,s.innerHTML=`
+(function(){const e=document.createElement("link").relList;if(e&&e.supports&&e.supports("modulepreload"))return;for(const i of document.querySelectorAll('link[rel="modulepreload"]'))s(i);new MutationObserver(i=>{for(const r of i)if(r.type==="childList")for(const o of r.addedNodes)o.tagName==="LINK"&&o.rel==="modulepreload"&&s(o)}).observe(document,{childList:!0,subtree:!0});function t(i){const r={};return i.integrity&&(r.integrity=i.integrity),i.referrerPolicy&&(r.referrerPolicy=i.referrerPolicy),i.crossOrigin==="use-credentials"?r.credentials="include":i.crossOrigin==="anonymous"?r.credentials="omit":r.credentials="same-origin",r}function s(i){if(i.ep)return;i.ep=!0;const r=t(i);fetch(i.href,r)}})();const B="pisentinel_token",f={getToken:()=>localStorage.getItem(B),setToken:n=>localStorage.setItem(B,n),removeToken:()=>localStorage.removeItem(B)},N=()=>(window.location.pathname||"").includes("/sentinel")?"/sentinel":"";async function p(n,e={}){const t=f.getToken(),s={"Content-Type":"application/json",...e.headers||{}};t&&(s.Authorization=`Bearer ${t}`);const i=N(),r=n.startsWith("http")?n:`${i}${n}`,o=await fetch(r,{...e,headers:s});if(o.status===401){f.removeToken(),window.dispatchEvent(new CustomEvent("pisentinel:unauthorized"));const g=await o.json().catch(()=>({detail:"Session expirée"}));throw new Error(g.detail||"Non autorisé")}if(!o.ok){const g=await o.json().catch(()=>({detail:`Erreur HTTP ${o.status}`}));throw new Error(g.detail||`Erreur serveur (${o.status})`)}return o.json()}const d={auth:{getConfig:()=>p("/api/auth/config"),loginGoogle:n=>p("/api/auth/google",{method:"POST",body:JSON.stringify({credential:n})}),loginLocal:(n,e)=>p("/api/auth/login",{method:"POST",body:JSON.stringify({username:n,password:e})}),getMe:()=>p("/api/auth/me"),logout:()=>p("/api/auth/logout",{method:"POST"})},system:{getStatus:()=>p("/api/system/status"),getSummary:()=>p("/api/system/summary")},ports:{getPorts:()=>p("/api/ports"),getHardeningRules:()=>p("/api/ports/hardening-rules")},tools:{getTools:()=>p("/api/tools"),control:(n,e)=>p(`/api/tools/${n}/control`,{method:"POST",body:JSON.stringify({action:e})}),install:n=>p(`/api/tools/${n}/install`,{method:"POST"})},attacks:{getAttacks:()=>p("/api/attacks"),trigger:(n,e)=>p("/api/attacks/trigger",{method:"POST",body:JSON.stringify({ip:n,service:e})}),getBanned:()=>p("/api/attacks/banned"),ban:(n,e)=>p("/api/attacks/ban",{method:"POST",body:JSON.stringify({ip:n,reason:e})}),unban:n=>p(`/api/attacks/ban/${encodeURIComponent(n)}`,{method:"DELETE"})},audit:{getReport:()=>p("/api/audit/report"),scan:n=>p(`/api/audit/scan/${n}`,{method:"POST"}),getOptimizations:()=>p("/api/audit/optimizations"),optimize:()=>p("/api/audit/optimize",{method:"POST"})}};class Q{constructor(){this.ctx=null,this.enabled=localStorage.getItem("pisentinel_sound")==="true"}init(){if(!this.ctx&&typeof window<"u"){const e=window.AudioContext||window.webkitAudioContext;e&&(this.ctx=new e)}}toggle(){return this.enabled=!this.enabled,localStorage.setItem("pisentinel_sound",this.enabled?"true":"false"),this.enabled&&this.playBeep(880,.08,"sine"),this.enabled}playBeep(e=440,t=.1,s="sine",i=.05){if(this.enabled)try{if(this.init(),this.ctx&&this.ctx.state==="suspended"&&this.ctx.resume(),!this.ctx)return;const r=this.ctx.createOscillator(),o=this.ctx.createGain();r.type=s,r.frequency.setValueAtTime(e,this.ctx.currentTime),o.gain.setValueAtTime(i,this.ctx.currentTime),o.gain.exponentialRampToValueAtTime(1e-4,this.ctx.currentTime+t),r.connect(o),o.connect(this.ctx.destination),r.start(),r.stop(this.ctx.currentTime+t)}catch{}}playAttackAlert(){this.enabled&&(this.playBeep(880,.12,"triangle",.08),setTimeout(()=>{this.playBeep(1174,.18,"triangle",.06)},120))}playBan(){this.enabled&&(this.playBeep(320,.15,"sawtooth",.08),setTimeout(()=>{this.playBeep(180,.25,"sawtooth",.08)},100))}playSuccess(){this.enabled&&(this.playBeep(523.25,.08,"sine",.05),setTimeout(()=>{this.playBeep(659.25,.12,"sine",.05)},90))}playClick(){this.enabled&&this.playBeep(700,.03,"sine",.03)}playAlert(){this.enabled&&this.playBeep(440,.1,"triangle",.06)}}const v=new Q,a={user:null,authConfig:null,activeTab:"radar",telemetry:null,summary:null,ports:[],portScore:100,riskBreakdown:{},tools:[],attacks:[],bannedIps:[],wsConnected:!1,soundEnabled:v.enabled,ws:null},k=()=>document.getElementById("app")||document.body;function l(n,e="info"){let t=document.querySelector(".toast-container");t||(t=document.createElement("div"),t.className="toast-container",document.body.appendChild(t));const s=document.createElement("div");s.className=`toast ${e}`,s.innerHTML=`
     <span class="pulse-dot ${e==="error"?"danger":e==="success"?"":"warning"}"></span>
     <span>${n}</span>
   `,t.appendChild(s),setTimeout(()=>{s.style.opacity="0",s.style.transform="translateX(40px)",s.style.transition="all 0.3s ease",setTimeout(()=>s.remove(),300)},4e3)}function F(n){try{return new Date(n).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}catch{return"Récemment"}}function U(n){if(!n||n.length!==2)return"🌐";const e=n.toUpperCase().split("").map(t=>127397+t.charCodeAt(0));return String.fromCodePoint(...e)}async function O(){try{J();try{a.authConfig=await d.auth.getConfig()}catch(e){console.warn("Failed to load auth config:",e)}if(f.getToken())try{const e=await d.auth.getMe();a.user=e.user,await C(),$(),A();return}catch{f.removeToken()}I()}catch(n){console.error("Fatal init error:",n);const e=k();e&&(e.innerHTML=`
@@ -7,7 +7,7 @@
           <p>${n.message}</p>
           <button onclick="location.reload()" style="margin-top:1rem; padding:0.5rem 1rem; background:#00f2fe; color:#000; border:none; border-radius:4px; cursor:pointer;">Recharger la page</button>
         </div>
-      `)}}window.addEventListener("pisentinel:unauthorized",()=>{a.user=null,a.ws&&(a.ws.close(),a.ws=null),I()});async function C(){try{const[n,e,t,s,i]=await Promise.all([d.system.getSummary().catch(()=>null),d.ports.getPorts().catch(()=>({ports:[],score:100,risk_breakdown:{}})),d.tools.getTools().catch(()=>[]),d.attacks.getAttacks().catch(()=>({recent_attacks:[]})),d.attacks.getBanned().catch(()=>({banned:[]}))]);a.summary=n,a.ports=e.ports||[],a.portScore=e.score||100,a.riskBreakdown=e.risk_breakdown||{},a.tools=t||[],a.attacks=s.recent_attacks||[],a.bannedIps=i.banned||[]}catch(n){console.error("Error loading initial data:",n)}}function $(){const n=f.getToken();if(!n)return;const e=window.location.protocol==="https:"?"wss:":"ws:",t=N(),s=`${e}//${window.location.host}${t}/api/ws/telemetry?token=${encodeURIComponent(n)}`;a.ws=new WebSocket(s),a.ws.onopen=()=>{a.wsConnected=!0,D()},a.ws.onmessage=i=>{try{const r=JSON.parse(i.data);r.type==="telemetry"?(a.telemetry=r.data,K()):r.type==="attack_event"&&W(r.data)}catch(r){console.error("WS parse error:",r)}},a.ws.onclose=()=>{a.wsConnected=!1,D(),a.user&&setTimeout($,4e3)}}function W(n){var e;a.attacks.unshift(n),a.attacks.length>50&&a.attacks.pop(),p.playAttackAlert(),l(`Alerte Attaque: ${n.type} depuis ${n.ip} (${((e=n.geo)==null?void 0:e.country)||"Inconnu"})`,"error"),a.activeTab==="radar"&&(S(),E())}function J(){const n=k();n&&(n.innerHTML=`
+      `)}}window.addEventListener("pisentinel:unauthorized",()=>{a.user=null,a.ws&&(a.ws.close(),a.ws=null),I()});async function C(){try{const[n,e,t,s,i]=await Promise.all([d.system.getSummary().catch(()=>null),d.ports.getPorts().catch(()=>({ports:[],score:100,risk_breakdown:{}})),d.tools.getTools().catch(()=>[]),d.attacks.getAttacks().catch(()=>({recent_attacks:[]})),d.attacks.getBanned().catch(()=>({banned:[]}))]);a.summary=n,a.ports=e.ports||[],a.portScore=e.score||100,a.riskBreakdown=e.risk_breakdown||{},a.tools=t||[],a.attacks=s.recent_attacks||[],a.bannedIps=i.banned||[]}catch(n){console.error("Error loading initial data:",n)}}function $(){const n=f.getToken();if(!n)return;const e=window.location.protocol==="https:"?"wss:":"ws:",t=N(),s=`${e}//${window.location.host}${t}/api/ws/telemetry?token=${encodeURIComponent(n)}`;a.ws=new WebSocket(s),a.ws.onopen=()=>{a.wsConnected=!0,D()},a.ws.onmessage=i=>{try{const r=JSON.parse(i.data);r.type==="telemetry"?(a.telemetry=r.data,K()):r.type==="attack_event"&&W(r.data)}catch(r){console.error("WS parse error:",r)}},a.ws.onclose=()=>{a.wsConnected=!1,D(),a.user&&setTimeout($,4e3)}}function W(n){var e;a.attacks.unshift(n),a.attacks.length>50&&a.attacks.pop(),v.playAttackAlert(),l(`Alerte Attaque: ${n.type} depuis ${n.ip} (${((e=n.geo)==null?void 0:e.country)||"Inconnu"})`,"error"),a.activeTab==="radar"&&(S(),E())}function J(){const n=k();n&&(n.innerHTML=`
     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; gap:1.5rem;">
       <div class="brand-logo" style="width:64px; height:64px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -70,7 +70,7 @@
         </form>
       </div>
     </div>
-  `,(s=a.authConfig)!=null&&s.google_enabled&&((r=(i=window.google)==null?void 0:i.accounts)!=null&&r.id)&&(window.google.accounts.id.initialize({client_id:a.authConfig.google_client_id,callback:Z}),window.google.accounts.id.renderButton(document.getElementById("googleBtn"),{theme:"filled_black",size:"large",text:"signin_with",shape:"pill",width:280})),document.getElementById("localLoginForm").addEventListener("submit",async o=>{o.preventDefault();const m=document.getElementById("loginUsername").value,g=document.getElementById("loginPassword").value;try{const v=await d.auth.loginLocal(m,g);f.setToken(v.access_token),a.user=v.user,p.playSuccess(),l("Authentification réussie !","success"),await C(),$(),A()}catch(v){p.playBan(),l(v.message,"error")}}))}async function Z(n){try{const e=await d.auth.loginGoogle(n.credential);f.setToken(e.access_token),a.user=e.user,p.playSuccess(),l(`Bienvenue, ${e.user.name} !`,"success"),await C(),$(),A()}catch(e){p.playBan(),l(e.message,"error")}}function A(){var e,t,s,i,r,o,m,g,v;const n=k();n&&(n.innerHTML=`
+  `,(s=a.authConfig)!=null&&s.google_enabled&&((r=(i=window.google)==null?void 0:i.accounts)!=null&&r.id)&&(window.google.accounts.id.initialize({client_id:a.authConfig.google_client_id,callback:Z}),window.google.accounts.id.renderButton(document.getElementById("googleBtn"),{theme:"filled_black",size:"large",text:"signin_with",shape:"pill",width:280})),document.getElementById("localLoginForm").addEventListener("submit",async o=>{o.preventDefault();const g=document.getElementById("loginUsername").value,c=document.getElementById("loginPassword").value;try{const u=await d.auth.loginLocal(g,c);f.setToken(u.access_token),a.user=u.user,v.playSuccess(),l("Authentification réussie !","success"),await C(),$(),A()}catch(u){v.playBan(),l(u.message,"error")}}))}async function Z(n){try{const e=await d.auth.loginGoogle(n.credential);f.setToken(e.access_token),a.user=e.user,v.playSuccess(),l(`Bienvenue, ${e.user.name} !`,"success"),await C(),$(),A()}catch(e){v.playBan(),l(e.message,"error")}}function A(){var e,t,s,i,r,o,g,c,u;const n=k();n&&(n.innerHTML=`
     <!-- Top Command Header -->
     <header class="soc-header">
       <div class="brand-section">
@@ -114,9 +114,9 @@
           ${(o=a.user)!=null&&o.picture?`
             <img src="${a.user.picture}" class="user-avatar" alt="Avatar" />
           `:`
-            <div class="user-avatar-placeholder">${(m=a.user)!=null&&m.name?a.user.name[0]:"A"}</div>
+            <div class="user-avatar-placeholder">${(g=a.user)!=null&&g.name?a.user.name[0]:"A"}</div>
           `}
-          <span style="font-weight:600;">${((g=a.user)==null?void 0:g.name)||"Admin"}</span>
+          <span style="font-weight:600;">${((c=a.user)==null?void 0:c.name)||"Admin"}</span>
           <button id="logoutBtn" class="btn btn-outline" style="padding:0.25rem 0.55rem; font-size:0.75rem; margin-left:0.3rem;">
             Sortir
           </button>
@@ -155,7 +155,7 @@
           </svg>
           Outils de Sécurité RPi
           <span class="tab-badge" style="background:rgba(0,245,160,0.15); color:var(--emerald); border-color:var(--emerald);">
-            ${a.tools.filter(c=>c.status==="active").length}/${a.tools.length}
+            ${a.tools.filter(m=>m.status==="active").length}/${a.tools.length}
           </span>
         </button>
 
@@ -193,7 +193,7 @@
         <div class="stat-card cyan">
           <div class="stat-info">
             <div class="stat-label">Score de Sécurité</div>
-            <div class="stat-value" id="cardSecurityScore">${((v=a.summary)==null?void 0:v.overall_security_score)||90}%</div>
+            <div class="stat-value" id="cardSecurityScore">${((u=a.summary)==null?void 0:u.overall_security_score)||90}%</div>
             <div class="stat-desc">Indice global de durcissement</div>
           </div>
           <div class="stat-icon">
@@ -203,12 +203,12 @@
           </div>
         </div>
 
-        <div class="stat-card ${a.ports.filter(c=>c.risk==="critical"||c.risk==="high").length>0?"amber":"green"}">
+        <div class="stat-card ${a.ports.filter(m=>m.risk==="critical"||m.risk==="high").length>0?"amber":"green"}">
           <div class="stat-info">
             <div class="stat-label">Ports en Écoute</div>
             <div class="stat-value" id="cardOpenPorts">${a.ports.length}</div>
             <div class="stat-desc">
-              ${a.ports.filter(c=>c.risk==="critical").length} critique(s), ${a.ports.filter(c=>c.risk==="high").length} exposé(s)
+              ${a.ports.filter(m=>m.risk==="critical").length} critique(s), ${a.ports.filter(m=>m.risk==="high").length} exposé(s)
             </div>
           </div>
           <div class="stat-icon">
@@ -235,7 +235,7 @@
         <div class="stat-card green">
           <div class="stat-info">
             <div class="stat-label">Outils de Défense</div>
-            <div class="stat-value" id="cardTools">${a.tools.filter(c=>c.status==="active").length} / ${a.tools.length}</div>
+            <div class="stat-value" id="cardTools">${a.tools.filter(m=>m.status==="active").length} / ${a.tools.length}</div>
             <div class="stat-desc">Services de sécurité actifs</div>
           </div>
           <div class="stat-icon">
@@ -294,7 +294,7 @@
         </div>
       </div>
     </dialog>
-  `,document.querySelectorAll(".tab-btn").forEach(c=>{c.addEventListener("click",()=>{document.querySelectorAll(".tab-btn").forEach(y=>y.classList.remove("active")),c.classList.add("active"),a.activeTab=c.dataset.tab,H()})}),document.getElementById("soundToggleBtn").addEventListener("click",()=>{a.soundEnabled=p.toggle(),document.getElementById("soundToggleBtn").classList.toggle("active",a.soundEnabled),l(a.soundEnabled?"Sons tactiques activés":"Sons désactivés","info")}),document.getElementById("logoutBtn").addEventListener("click",async()=>{await d.auth.logout(),f.removeToken(),a.user=null,a.ws&&a.ws.close(),l("Déconnexion effectuée.","info"),I()}),document.getElementById("quickSimulateBtn").addEventListener("click",async()=>{var c;try{const y=await d.attacks.trigger();l(`Attaque simulée injectée depuis ${(c=y.event)==null?void 0:c.ip}`,"info")}catch(y){l(y.message,"error")}}),document.getElementById("quickBanModalBtn").addEventListener("click",()=>{document.getElementById("banIpInput").value="",document.getElementById("banModal").showModal()}),document.getElementById("banForm").addEventListener("submit",async c=>{c.preventDefault();const y=document.getElementById("banIpInput").value,h=document.getElementById("banReasonInput").value;try{const b=await d.attacks.ban(y,h);p.playBan(),l(b.message,"success"),document.getElementById("banModal").close();const x=await d.attacks.getBanned();a.bannedIps=x.banned||[],a.activeTab==="radar"&&T()}catch(b){l(b.message,"error")}}),document.getElementById("copyRulesBtn").addEventListener("click",()=>{const c=document.getElementById("rulesCode").innerText;navigator.clipboard.writeText(c),l("Règles UFW copiées dans le presse-papier !","success")}),H())}function D(){const n=document.getElementById("socPill");n&&(n.innerHTML=`
+  `,document.querySelectorAll(".tab-btn").forEach(m=>{m.addEventListener("click",()=>{document.querySelectorAll(".tab-btn").forEach(y=>y.classList.remove("active")),m.classList.add("active"),a.activeTab=m.dataset.tab,H()})}),document.getElementById("soundToggleBtn").addEventListener("click",()=>{a.soundEnabled=v.toggle(),document.getElementById("soundToggleBtn").classList.toggle("active",a.soundEnabled),l(a.soundEnabled?"Sons tactiques activés":"Sons désactivés","info")}),document.getElementById("logoutBtn").addEventListener("click",async()=>{await d.auth.logout(),f.removeToken(),a.user=null,a.ws&&a.ws.close(),l("Déconnexion effectuée.","info"),I()}),document.getElementById("quickSimulateBtn").addEventListener("click",async()=>{var m;try{const y=await d.attacks.trigger();l(`Attaque simulée injectée depuis ${(m=y.event)==null?void 0:m.ip}`,"info")}catch(y){l(y.message,"error")}}),document.getElementById("quickBanModalBtn").addEventListener("click",()=>{document.getElementById("banIpInput").value="",document.getElementById("banModal").showModal()}),document.getElementById("banForm").addEventListener("submit",async m=>{m.preventDefault();const y=document.getElementById("banIpInput").value,h=document.getElementById("banReasonInput").value;try{const b=await d.attacks.ban(y,h);v.playBan(),l(b.message,"success"),document.getElementById("banModal").close();const x=await d.attacks.getBanned();a.bannedIps=x.banned||[],a.activeTab==="radar"&&T()}catch(b){l(b.message,"error")}}),document.getElementById("copyRulesBtn").addEventListener("click",()=>{const m=document.getElementById("rulesCode").innerText;navigator.clipboard.writeText(m),l("Règles UFW copiées dans le presse-papier !","success")}),H())}function D(){const n=document.getElementById("socPill");n&&(n.innerHTML=`
       <span class="pulse-dot ${a.wsConnected?"":"danger"}"></span>
       <span>${a.wsConnected?"SURVEILLANCE ACTIVE":"DÉCONNECTÉ"}</span>
     `)}function K(){var e;if(!a.telemetry)return;const n=document.getElementById("headerTemp");n&&(n.innerText=`${((e=a.telemetry.cpu)==null?void 0:e.temperature_c)||42}°C`),a.activeTab==="system"&&G()}function H(){a.activeTab==="radar"?T():a.activeTab==="ports"?V():a.activeTab==="tools"?w():a.activeTab==="system"&&G()}function T(){const n=document.getElementById("tabContent");n.innerHTML=`
@@ -422,8 +422,8 @@
         </div>
       </div>
     </div>
-  `,S(),E(),document.getElementById("refreshAttacksBtn").addEventListener("click",async()=>{const e=await d.attacks.getAttacks();a.attacks=e.recent_attacks||[],E(),S(),l("Journal des attaques rafraîchi.","info")}),document.querySelectorAll(".unban-btn").forEach(e=>{e.addEventListener("click",async()=>{const t=e.dataset.ip;try{const s=await d.attacks.unban(t);p.playSuccess(),l(s.message,"success");const i=await d.attacks.getBanned();a.bannedIps=i.banned||[],T()}catch(s){l(s.message,"error")}})})}function S(){const n=document.getElementById("radarThreats");if(!n)return;const e=a.attacks.slice(0,12).map((t,s)=>{var g,v,c;const i=((g=t.geo)==null?void 0:g.lat)||Math.random()*80-40,r=((v=t.geo)==null?void 0:v.lon)||Math.random()*320-160,o=Math.max(10,Math.min(90,(r+180)/360*80+10));return`
-      <div class="threat-marker" style="top:${Math.max(15,Math.min(85,(90-i)/180*70+15))}%; left:${o}%;" title="${t.ip} (${((c=t.geo)==null?void 0:c.country)||"Inconnu"}) - ${t.type}"></div>
+  `,S(),E(),document.getElementById("refreshAttacksBtn").addEventListener("click",async()=>{const e=await d.attacks.getAttacks();a.attacks=e.recent_attacks||[],E(),S(),l("Journal des attaques rafraîchi.","info")}),document.querySelectorAll(".unban-btn").forEach(e=>{e.addEventListener("click",async()=>{const t=e.dataset.ip;try{const s=await d.attacks.unban(t);v.playSuccess(),l(s.message,"success");const i=await d.attacks.getBanned();a.bannedIps=i.banned||[],T()}catch(s){l(s.message,"error")}})})}function S(){const n=document.getElementById("radarThreats");if(!n)return;const e=a.attacks.slice(0,12).map((t,s)=>{var c,u,m;const i=((c=t.geo)==null?void 0:c.lat)||Math.random()*80-40,r=((u=t.geo)==null?void 0:u.lon)||Math.random()*320-160,o=Math.max(10,Math.min(90,(r+180)/360*80+10));return`
+      <div class="threat-marker" style="top:${Math.max(15,Math.min(85,(90-i)/180*70+15))}%; left:${o}%;" title="${t.ip} (${((m=t.geo)==null?void 0:m.country)||"Inconnu"}) - ${t.type}"></div>
     `}).join("");n.innerHTML=e}function E(){const n=document.getElementById("attackFeedList");if(n){if(a.attacks.length===0){n.innerHTML=`
       <div style="text-align:center; padding:2rem; color:var(--text-dim); font-size:0.85rem;">
         Aucune tentative d'attaque enregistrée pour le moment.
@@ -449,7 +449,7 @@
         </div>
       </div>
     </div>
-  `}).join(""),n.querySelectorAll(".quick-ban-btn").forEach(e=>{e.addEventListener("click",async()=>{const t=e.dataset.ip;try{const s=await d.attacks.ban(t,"Bloqué en 1 clic depuis le flux d'attaques");p.playBan(),l(s.message,"success");const i=await d.attacks.getBanned();a.bannedIps=i.banned||[],T()}catch(s){l(s.message,"error")}})})}}function V(){const n=document.getElementById("tabContent");n.innerHTML=`
+  `}).join(""),n.querySelectorAll(".quick-ban-btn").forEach(e=>{e.addEventListener("click",async()=>{const t=e.dataset.ip;try{const s=await d.attacks.ban(t,"Bloqué en 1 clic depuis le flux d'attaques");v.playBan(),l(s.message,"success");const i=await d.attacks.getBanned();a.bannedIps=i.banned||[],T()}catch(s){l(s.message,"error")}})})}}function V(){const n=document.getElementById("tabContent");n.innerHTML=`
     <div class="grid-soc">
       <!-- Port Score Header Card -->
       <div class="panel" style="grid-column: span 12;">
@@ -643,7 +643,7 @@
         </div>
       </div>
     </div>
-  `,j(),document.querySelectorAll(".tool-action-btn").forEach(t=>{t.addEventListener("click",async()=>{const s=t.dataset.tool,i=t.dataset.action;try{t.disabled=!0;const r=await d.tools.control(s,i);p.playSuccess(),l(r.message,"success"),a.tools=await d.tools.getTools(),w()}catch(r){l(r.message,"error")}})}),document.querySelectorAll(".tool-install-btn").forEach(t=>{t.addEventListener("click",async()=>{const s=t.dataset.tool;try{t.disabled=!0,t.innerText="Installation en cours...";const i=await d.tools.install(s);p.playSuccess(),l(i.message,"success")}catch(i){p.playAlert(),l(i.message,"error")}finally{a.tools=await d.tools.getTools(),w()}})}),document.querySelectorAll(".run-audit-btn").forEach(t=>{t.addEventListener("click",async()=>{const s=t.dataset.tool;try{t.disabled=!0,t.innerText="Scan en cours...";const i=await d.audit.scan(s);p.playSuccess(),l(i.message,"info")}catch(i){p.playAlert(),l(i.message,"error")}finally{setTimeout(()=>{t.disabled=!1,t.innerText="🚀 Lancer Scan"},5e3)}})}),document.querySelectorAll(".view-audit-btn").forEach(t=>{t.addEventListener("click",()=>{const s=t.dataset.tool;X(s)})});const e=document.getElementById("applyHardeningBtn");e&&e.addEventListener("click",async()=>{try{e.disabled=!0,e.innerText="Application en cours...";const t=await d.audit.optimize();p.playSuccess(),l(t.message,"success"),await j(),a.summary=await d.system.getSummary(),updateSummaryHeader()}catch(t){p.playAlert(),l(t.message,"error")}finally{e.disabled=!1,e.innerText="⚡ Appliquer le Durcissement Recommandé"}}),document.getElementById("refreshToolsBtn").addEventListener("click",async()=>{a.tools=await d.tools.getTools(),w(),l("Statut des outils actualisé.","info")})}async function j(){try{const n=await d.audit.getOptimizations(),e=document.getElementById("hardeningChecksContainer");if(!e)return;e.innerHTML=n.map(t=>`
+  `,j(),document.querySelectorAll(".tool-action-btn").forEach(t=>{t.addEventListener("click",async()=>{const s=t.dataset.tool,i=t.dataset.action;try{t.disabled=!0;const r=await d.tools.control(s,i);v.playSuccess(),l(r.message,"success"),a.tools=await d.tools.getTools(),w()}catch(r){l(r.message,"error")}})}),document.querySelectorAll(".tool-install-btn").forEach(t=>{t.addEventListener("click",async()=>{const s=t.dataset.tool;try{t.disabled=!0,t.innerText="Installation en cours...";const i=await d.tools.install(s);v.playSuccess(),l(i.message,"success")}catch(i){v.playAlert(),l(i.message,"error")}finally{a.tools=await d.tools.getTools(),w()}})}),document.querySelectorAll(".run-audit-btn").forEach(t=>{t.addEventListener("click",async()=>{const s=t.dataset.tool;try{t.disabled=!0,t.innerText="Scan en cours...";const i=await d.audit.scan(s);v.playSuccess(),l(i.message,"info")}catch(i){v.playAlert(),l(i.message,"error")}finally{setTimeout(()=>{t.disabled=!1,t.innerText="🚀 Lancer Scan"},5e3)}})}),document.querySelectorAll(".view-audit-btn").forEach(t=>{t.addEventListener("click",()=>{const s=t.dataset.tool;X(s)})});const e=document.getElementById("applyHardeningBtn");e&&e.addEventListener("click",async()=>{try{e.disabled=!0,e.innerText="Application en cours...";const t=await d.audit.optimize();v.playSuccess(),l(t.message,"success"),await j(),a.summary=await d.system.getSummary(),updateSummaryHeader()}catch(t){v.playAlert(),l(t.message,"error")}finally{e.disabled=!1,e.innerText="⚡ Appliquer le Durcissement Recommandé"}}),document.getElementById("refreshToolsBtn").addEventListener("click",async()=>{a.tools=await d.tools.getTools(),w(),l("Statut des outils actualisé.","info")})}async function j(){try{const n=await d.audit.getOptimizations(),e=document.getElementById("hardeningChecksContainer");if(!e)return;e.innerHTML=n.map(t=>`
       <div class="hardening-card ${t.compliant?"compliant":"non-compliant"}">
         <div>
           <div style="font-size:0.72rem; color:var(--cyan-neon); font-family:var(--font-mono); text-transform:uppercase;">${t.category}</div>
@@ -655,7 +655,7 @@
           ${t.compliant?"ACTIF":"À DURCIR"}
         </span>
       </div>
-    `).join("")}catch(n){console.error("Error loading hardening checks:",n)}}async function X(n){p.playClick();const e=document.getElementById("auditReportModal");e&&e.remove();const t=document.createElement("dialog");t.id="auditReportModal",t.className="soc-modal",t.innerHTML=`
+    `).join("")}catch(n){console.error("Error loading hardening checks:",n)}}async function X(n){var i;try{(i=v.playClick)==null||i.call(v)}catch{}const e=document.getElementById("auditReportModal");e&&e.remove();const t=document.createElement("dialog");t.id="auditReportModal",t.className="soc-modal",t.innerHTML=`
     <div class="modal-content audit-dialog-content">
       <div class="modal-header">
         <h3 class="modal-title">Chargement du rapport...</h3>
@@ -667,17 +667,17 @@
         </div>
       </div>
     </div>
-  `,document.body.appendChild(t),t.showModal(),document.getElementById("closeAuditModalBtn").addEventListener("click",()=>{t.close(),t.remove()});try{const s=await d.audit.getReport(),i=document.getElementById("auditModalBody"),r=t.querySelector(".modal-title");if(n==="lynis"){const o=s.lynis;if(r.innerHTML="🛡️ Rapport d'Audit Lynis",!o.available){i.innerHTML=`<p style="color:var(--amber);">${o.message||"Aucun rapport disponible."}</p>`;return}i.innerHTML=`
+  `,document.body.appendChild(t),t.addEventListener("click",r=>{r.target===t&&(t.close(),t.remove())}),typeof t.showModal=="function"?t.showModal():t.setAttribute("open","");const s=document.getElementById("closeAuditModalBtn");s&&s.addEventListener("click",()=>{t.close(),t.remove()});try{const r=await d.audit.getReport(),o=document.getElementById("auditModalBody"),g=t.querySelector(".modal-title");if(n==="lynis"){const c=r.lynis;if(g.innerHTML="🛡️ Rapport d'Audit Lynis",!c.available){o.innerHTML=`<p style="color:var(--amber);">${c.message||"Aucun rapport disponible."}</p>`;return}o.innerHTML=`
         <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); padding:1rem; border-radius:var(--radius-sm); margin-bottom:1.25rem;">
           <div>
             <div style="font-size:0.8rem; color:var(--text-dim); text-transform:uppercase;">Score de Durcissement (Hardening Index)</div>
-            <div style="font-family:var(--font-cyber); font-size:2.4rem; font-weight:700; color:${o.hardening_index>=75?"var(--emerald)":o.hardening_index>=60?"var(--cyan-neon)":"var(--amber)"};">
-              ${o.hardening_index} <span style="font-size:1.1rem; color:var(--text-muted);">/ 100</span>
+            <div style="font-family:var(--font-cyber); font-size:2.4rem; font-weight:700; color:${c.hardening_index>=75?"var(--emerald)":c.hardening_index>=60?"var(--cyan-neon)":"var(--amber)"};">
+              ${c.hardening_index} <span style="font-size:1.1rem; color:var(--text-muted);">/ 100</span>
             </div>
           </div>
           <div style="text-align:right; font-family:var(--font-mono); font-size:0.8rem; color:var(--text-muted);">
-            <div>Dernier Scan : ${o.scan_date}</div>
-            <div style="color:var(--cyan-neon); margin-top:0.25rem;">${o.suggestions_count} suggestions d'optimisation</div>
+            <div>Dernier Scan : ${c.scan_date}</div>
+            <div style="color:var(--cyan-neon); margin-top:0.25rem;">${c.suggestions_count} suggestions d'optimisation</div>
           </div>
         </div>
 
@@ -685,23 +685,23 @@
           Recommandations & Suggestions Prioritaires
         </h4>
         <div style="display:flex; flex-direction:column; gap:0.6rem; max-height:300px; overflow-y:auto;" class="custom-scroll">
-          ${o.suggestions.map(m=>`
+          ${c.suggestions.map(u=>`
             <div style="background:rgba(17,26,51,0.7); border:1px solid var(--panel-border); border-left:3px solid var(--cyan-neon); border-radius:var(--radius-sm); padding:0.65rem 0.85rem;">
-              <span style="font-family:var(--font-mono); font-size:0.7rem; color:var(--amber); background:rgba(255,170,0,0.15); padding:1px 5px; border-radius:3px;">${m.id}</span>
-              <span style="font-size:0.85rem; margin-left:0.4rem; color:var(--text-main);">${m.desc}</span>
+              <span style="font-family:var(--font-mono); font-size:0.7rem; color:var(--amber); background:rgba(255,170,0,0.15); padding:1px 5px; border-radius:3px;">${u.id}</span>
+              <span style="font-size:0.85rem; margin-left:0.4rem; color:var(--text-main);">${u.desc}</span>
             </div>
           `).join("")}
         </div>
-      `}else if(n==="rkhunter"){const o=s.rkhunter;if(r.innerHTML="🔍 Rapport Rootkit Hunter",!o.available){i.innerHTML=`<p style="color:var(--amber);">${o.message||"Aucun rapport disponible."}</p>`;return}i.innerHTML=`
+      `}else if(n==="rkhunter"){const c=r.rkhunter;if(g.innerHTML="🔍 Rapport Rootkit Hunter",!c.available){o.innerHTML=`<p style="color:var(--amber);">${c.message||"Aucun rapport disponible."}</p>`;return}o.innerHTML=`
         <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); padding:1rem; border-radius:var(--radius-sm); margin-bottom:1.25rem;">
           <div>
             <div style="font-size:0.8rem; color:var(--text-dim); text-transform:uppercase;">État du Système</div>
-            <div style="font-family:var(--font-cyber); font-size:1.6rem; font-weight:700; color:${o.warnings_count===0?"var(--emerald)":"var(--amber)"};">
-              ${o.warnings_count===0?"Système Sain & Conforme":`${o.warnings_count} Avertissement(s) Détecté(s)`}
+            <div style="font-family:var(--font-cyber); font-size:1.6rem; font-weight:700; color:${c.warnings_count===0?"var(--emerald)":"var(--amber)"};">
+              ${c.warnings_count===0?"Système Sain & Conforme":`${c.warnings_count} Avertissement(s) Détecté(s)`}
             </div>
           </div>
           <div style="text-align:right; font-family:var(--font-mono); font-size:0.8rem; color:var(--text-muted);">
-            <div>Dernier Scan : ${o.scan_date}</div>
+            <div>Dernier Scan : ${c.scan_date}</div>
           </div>
         </div>
 
@@ -709,21 +709,21 @@
           Analyse des Avertissements
         </h4>
         <div style="display:flex; flex-direction:column; gap:0.75rem; max-height:300px; overflow-y:auto;" class="custom-scroll">
-          ${o.warnings.length===0?`
+          ${c.warnings.length===0?`
             <div style="color:var(--emerald); font-size:0.9rem;">Aucun rootkit ni altération suspecte trouvée.</div>
-          `:o.warnings.map(m=>`
-            <div style="background:rgba(17,26,51,0.7); border:1px solid rgba(255,170,0,0.3); border-left:3px solid ${m.is_false_positive?"var(--cyan-neon)":"var(--crimson)"}; border-radius:var(--radius-sm); padding:0.75rem 0.95rem;">
+          `:c.warnings.map(u=>`
+            <div style="background:rgba(17,26,51,0.7); border:1px solid rgba(255,170,0,0.3); border-left:3px solid ${u.is_false_positive?"var(--cyan-neon)":"var(--crimson)"}; border-radius:var(--radius-sm); padding:0.75rem 0.95rem;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
-                <span style="font-family:var(--font-mono); font-size:0.75rem; color:${m.is_false_positive?"var(--cyan-neon)":"var(--crimson)"};">
-                  ${m.is_false_positive?"✅ Faux Positif Connu (Normal sur Debian / RPi)":"⚠️ Alerte de Sécurité"}
+                <span style="font-family:var(--font-mono); font-size:0.75rem; color:${u.is_false_positive?"var(--cyan-neon)":"var(--crimson)"};">
+                  ${u.is_false_positive?"✅ Faux Positif Connu (Normal sur Debian / RPi)":"⚠️ Alerte de Sécurité"}
                 </span>
               </div>
-              <div style="font-size:0.85rem; color:var(--text-main);">${m.explanation}</div>
-              <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim); margin-top:0.35rem; word-break:break-all;">${m.raw}</div>
+              <div style="font-size:0.85rem; color:var(--text-main);">${u.explanation}</div>
+              <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim); margin-top:0.35rem; word-break:break-all;">${u.raw}</div>
             </div>
           `).join("")}
         </div>
-      `}}catch(s){document.getElementById("auditModalBody").innerHTML=`<p style="color:var(--crimson);">Erreur: ${s.message}</p>`}}function G(){var s,i,r,o,m,g,v,c,y,h,b,x,M,z,P,L,_,R,q;const n=document.getElementById("tabContent"),e=a.telemetry||{hostname:"raspberrypi",model:"Raspberry Pi",os:"Linux",uptime:"N/A",cpu:{percent:12,temperature_c:44.5,cores:4},memory:{total_mb:3800,used_mb:850,percent:22},disk:{total_gb:32,used_gb:7.5,percent:23},network:{bytes_sent_mb:14.2,bytes_recv_mb:45.8}},t=(((s=e.cpu)==null?void 0:s.temperature_c)||0)>60;n.innerHTML=`
+      `}}catch(r){document.getElementById("auditModalBody").innerHTML=`<p style="color:var(--crimson);">Erreur: ${r.message}</p>`}}function G(){var s,i,r,o,g,c,u,m,y,h,b,x,M,z,P,L,_,R,q;const n=document.getElementById("tabContent"),e=a.telemetry||{hostname:"raspberrypi",model:"Raspberry Pi",os:"Linux",uptime:"N/A",cpu:{percent:12,temperature_c:44.5,cores:4},memory:{total_mb:3800,used_mb:850,percent:22},disk:{total_gb:32,used_gb:7.5,percent:23},network:{bytes_sent_mb:14.2,bytes_recv_mb:45.8}},t=(((s=e.cpu)==null?void 0:s.temperature_c)||0)>60;n.innerHTML=`
     <div class="grid-soc">
       <!-- Hardware System Overview Card -->
       <div class="panel" style="grid-column: span 12;">
@@ -778,7 +778,7 @@
           </div>
           <div class="gauge-sub">
             <span>Fréquence dynamique</span>
-            <span>${((m=e.cpu)==null?void 0:m.cores)||4} Threads</span>
+            <span>${((g=e.cpu)==null?void 0:g.cores)||4} Threads</span>
           </div>
         </div>
 
@@ -787,11 +787,11 @@
           <div class="gauge-header">
             <span class="gauge-title">Température SoC (RPi)</span>
             <span class="gauge-val" style="color:${t?"var(--crimson)":"var(--emerald)"};">
-              ${((g=e.cpu)==null?void 0:g.temperature_c)||42}&deg;C
+              ${((c=e.cpu)==null?void 0:c.temperature_c)||42}&deg;C
             </span>
           </div>
           <div class="progress-track">
-            <div class="progress-fill ${t?"warm":""}" style="width:${Math.min(100,(((v=e.cpu)==null?void 0:v.temperature_c)||40)/85*100)}%;"></div>
+            <div class="progress-fill ${t?"warm":""}" style="width:${Math.min(100,(((u=e.cpu)==null?void 0:u.temperature_c)||40)/85*100)}%;"></div>
           </div>
           <div class="gauge-sub">
             <span>Seuil critique: 80°C</span>
@@ -803,7 +803,7 @@
         <div class="gauge-card">
           <div class="gauge-header">
             <span class="gauge-title">Mémoire Vive (RAM)</span>
-            <span class="gauge-val" style="color:var(--emerald);">${((c=e.memory)==null?void 0:c.percent)||0}%</span>
+            <span class="gauge-val" style="color:var(--emerald);">${((m=e.memory)==null?void 0:m.percent)||0}%</span>
           </div>
           <div class="progress-track">
             <div class="progress-fill" style="width:${((y=e.memory)==null?void 0:y.percent)||0}%;"></div>
