@@ -1,0 +1,97 @@
+import os
+import logging
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+from app.core.config import settings
+from app.services.attack_monitor import attack_monitor
+from app.routers import auth, system, ports, security_tools, attacks, ws
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+)
+logger = logging.getLogger("pisentinel")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Launch background attack monitoring loop
+    logger.info("Initializing PiSentinel Security Engine...")
+    attack_monitor.start()
+    logger.info(f"PiSentinel online - Simulation mode: {settings.is_simulation}")
+    yield
+    # Shutdown
+    logger.info("Shutting down PiSentinel Security Engine...")
+    attack_monitor._running = False
+
+app = FastAPI(
+    title="PiSentinel - Raspberry Pi Security Hub",
+    description="All-in-One Real-Time Security Operations Center for Raspberry Pi",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# CORS configuration
+origins = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+if "*" in origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+else:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+# Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
+
+# Include API Routers
+app.include_router(auth.router)
+app.include_router(system.router)
+app.include_router(ports.router)
+app.include_router(security_tools.router)
+app.include_router(attacks.router)
+app.include_router(ws.router)
+
+@app.get("/health")
+def health_check():
+    return {
+        "status": "healthy",
+        "service": "PiSentinel",
+        "simulation_mode": settings.is_simulation
+    }
+
+# Frontend Static Files Serving (if built frontend exists)
+frontend_dist = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend", "dist")
+
+if os.path.exists(frontend_dist):
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_dist, "assets")), name="assets")
+
+    @app.get("/{full_path:path}")
+    async def serve_spa(full_path: str):
+        file_path = os.path.join(frontend_dist, full_path)
+        if os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(frontend_dist, "index.html"))
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host=settings.HOST, port=settings.PORT, reload=True)
