@@ -44,4 +44,7 @@ def trigger_install(
     Installs the requested security package via apt-get.
     """
     res = install_tool(tool_id)
+    if not res.get("success"):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=res.get("message"))
     return res
+

@@ -1117,14 +1117,16 @@ function renderToolsTab() {
       const toolId = btn.dataset.tool;
       try {
         btn.disabled = true;
-        btn.innerText = 'Installation...';
+        btn.innerText = 'Installation en cours...';
         const res = await api.tools.install(toolId);
         sounds.playSuccess();
         showToast(res.message, 'success');
+      } catch (err) {
+        sounds.playAlert();
+        showToast(err.message, 'error');
+      } finally {
         state.tools = await api.tools.getTools();
         renderToolsTab();
-      } catch (err) {
-        showToast(err.message, 'error');
       }
     });
   });

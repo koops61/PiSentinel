@@ -1,3 +1,4 @@
+import os
 import shutil
 import subprocess
 import platform
@@ -110,7 +111,14 @@ def get_installed_security_tools() -> List[Dict[str, Any]]:
     results = []
 
     for tool in SECURITY_TOOLS_CATALOG:
+        # Check binary in PATH as well as standard system sbin/bin paths
         binary_exists = shutil.which(tool["binary"]) is not None
+        if not binary_exists:
+            for p in ["/usr/bin", "/usr/sbin", "/bin", "/sbin", "/usr/local/bin", "/usr/local/sbin"]:
+                candidate = os.path.join(p, tool["binary"])
+                if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+                    binary_exists = True
+                    break
         
         # In non-Linux development mode, simulate realistic installed tools
         if not is_linux:
@@ -201,17 +209,26 @@ def install_tool(tool_id: str) -> Dict[str, Any]:
         }
 
     try:
+        cmd_args = [
+            "sudo", "env", "DEBIAN_FRONTEND=noninteractive",
+            "apt-get", "install", "-y", "--no-install-recommends"
+        ] + tool["apt_package"].split()
+
         res = subprocess.run(
-            ["sudo", "apt-get", "install", "-y"] + tool["apt_package"].split(),
+            cmd_args,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            timeout=60
+            timeout=180
         )
+        success = res.returncode == 0
+        err_msg = res.stderr.strip() or res.stdout.strip()
         return {
-            "success": res.returncode == 0,
-            "command": cmd,
-            "message": "Installation terminée avec succès." if res.returncode == 0 else res.stderr
+            "success": success,
+            "command": " ".join(cmd_args),
+            "message": f"Installation de {tool['name']} terminée avec succès." if success else f"Échec: {err_msg[:200]}"
         }
+    except subprocess.TimeoutExpired:
+        return {"success": False, "command": cmd, "message": "Délai d'attente dépassé (timeout 180s)."}
     except Exception as e:
         return {"success": False, "command": cmd, "message": str(e)}
