@@ -20,7 +20,7 @@ const state = {
 };
 
 // Elements
-const app = document.getElementById('app');
+const getApp = () => document.getElementById('app') || document.body;
 
 // Toast helper
 function showToast(message, type = 'info') {
@@ -72,30 +72,44 @@ function getFlagEmoji(countryCode) {
 // ==========================================================================
 
 async function init() {
-  renderLoading();
-
   try {
-    state.authConfig = await api.auth.getConfig();
-  } catch (err) {
-    console.warn('Failed to load auth config:', err);
-  }
+    renderLoading();
 
-  const token = authStorage.getToken();
-  if (token) {
     try {
-      const meData = await api.auth.getMe();
-      state.user = meData.user;
-      await loadInitialData();
-      connectWebSocket();
-      renderApp();
-      return;
-    } catch (e) {
-      authStorage.removeToken();
+      state.authConfig = await api.auth.getConfig();
+    } catch (err) {
+      console.warn('Failed to load auth config:', err);
+    }
+
+    const token = authStorage.getToken();
+    if (token) {
+      try {
+        const meData = await api.auth.getMe();
+        state.user = meData.user;
+        await loadInitialData();
+        connectWebSocket();
+        renderApp();
+        return;
+      } catch (e) {
+        authStorage.removeToken();
+      }
+    }
+
+    // Not authenticated: Show Login
+    renderLogin();
+  } catch (fatalErr) {
+    console.error('Fatal init error:', fatalErr);
+    const app = getApp();
+    if (app) {
+      app.innerHTML = `
+        <div style="padding:2rem; color:#ff3366; font-family:monospace; background:#060913; min-height:100vh;">
+          <h2>Erreur d'initialisation PiSentinel</h2>
+          <p>${fatalErr.message}</p>
+          <button onclick="location.reload()" style="margin-top:1rem; padding:0.5rem 1rem; background:#00f2fe; color:#000; border:none; border-radius:4px; cursor:pointer;">Recharger la page</button>
+        </div>
+      `;
     }
   }
-
-  // Not authenticated: Show Login
-  renderLogin();
 }
 
 window.addEventListener('pisentinel:unauthorized', () => {
@@ -189,6 +203,8 @@ function handleIncomingAttack(attack) {
 // ==========================================================================
 
 function renderLoading() {
+  const app = getApp();
+  if (!app) return;
   app.innerHTML = `
     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; gap:1.5rem;">
       <div class="brand-logo" style="width:64px; height:64px;">
@@ -205,6 +221,8 @@ function renderLoading() {
 
 // Login Modal View
 function renderLogin() {
+  const app = getApp();
+  if (!app) return;
   app.innerHTML = `
     <div style="display:flex; align-items:center; justify-content:center; min-height:100vh; padding:1.5rem;">
       <div class="modal-content" style="max-width:480px; width:100%;">
@@ -314,6 +332,8 @@ async function handleGoogleCredential(response) {
 // ==========================================================================
 
 function renderApp() {
+  const app = getApp();
+  if (!app) return;
   app.innerHTML = `
     <!-- Top Command Header -->
     <header class="soc-header">

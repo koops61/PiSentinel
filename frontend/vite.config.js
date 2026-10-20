@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-  base: './', // Relative assets so it works seamlessly under /sentinel or at root
+  base: '/sentinel/', // Prefix all assets with /sentinel/ so it never breaks with or without trailing slash
   server: {
     port: 5173,
     proxy: {

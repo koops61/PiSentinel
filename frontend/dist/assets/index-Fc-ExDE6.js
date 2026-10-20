@@ -1,7 +1,13 @@
-(function(){const e=document.createElement("link").relList;if(e&&e.supports&&e.supports("modulepreload"))return;for(const i of document.querySelectorAll('link[rel="modulepreload"]'))n(i);new MutationObserver(i=>{for(const r of i)if(r.type==="childList")for(const o of r.addedNodes)o.tagName==="LINK"&&o.rel==="modulepreload"&&n(o)}).observe(document,{childList:!0,subtree:!0});function t(i){const r={};return i.integrity&&(r.integrity=i.integrity),i.referrerPolicy&&(r.referrerPolicy=i.referrerPolicy),i.crossOrigin==="use-credentials"?r.credentials="include":i.crossOrigin==="anonymous"?r.credentials="omit":r.credentials="same-origin",r}function n(i){if(i.ep)return;i.ep=!0;const r=t(i);fetch(i.href,r)}})();const $="pisentinel_token",y={getToken:()=>localStorage.getItem($),setToken:s=>localStorage.setItem($,s),removeToken:()=>localStorage.removeItem($)},N=()=>(window.location.pathname||"").includes("/sentinel")?"/sentinel":"";async function u(s,e={}){const t=y.getToken(),n={"Content-Type":"application/json",...e.headers||{}};t&&(n.Authorization=`Bearer ${t}`);const i=N(),r=s.startsWith("http")?s:`${i}${s}`,o=await fetch(r,{...e,headers:n});if(o.status===401){y.removeToken(),window.dispatchEvent(new CustomEvent("pisentinel:unauthorized"));const m=await o.json().catch(()=>({detail:"Session expirée"}));throw new Error(m.detail||"Non autorisé")}if(!o.ok){const m=await o.json().catch(()=>({detail:`Erreur HTTP ${o.status}`}));throw new Error(m.detail||`Erreur serveur (${o.status})`)}return o.json()}const d={auth:{getConfig:()=>u("/api/auth/config"),loginGoogle:s=>u("/api/auth/google",{method:"POST",body:JSON.stringify({credential:s})}),loginLocal:(s,e)=>u("/api/auth/login",{method:"POST",body:JSON.stringify({username:s,password:e})}),getMe:()=>u("/api/auth/me"),logout:()=>u("/api/auth/logout",{method:"POST"})},system:{getStatus:()=>u("/api/system/status"),getSummary:()=>u("/api/system/summary")},ports:{getPorts:()=>u("/api/ports"),getHardeningRules:()=>u("/api/ports/hardening-rules")},tools:{getTools:()=>u("/api/tools"),control:(s,e)=>u(`/api/tools/${s}/control`,{method:"POST",body:JSON.stringify({action:e})}),install:s=>u(`/api/tools/${s}/install`,{method:"POST"})},attacks:{getAttacks:()=>u("/api/attacks"),trigger:(s,e)=>u("/api/attacks/trigger",{method:"POST",body:JSON.stringify({ip:s,service:e})}),getBanned:()=>u("/api/attacks/banned"),ban:(s,e)=>u("/api/attacks/ban",{method:"POST",body:JSON.stringify({ip:s,reason:e})}),unban:s=>u(`/api/attacks/ban/${encodeURIComponent(s)}`,{method:"DELETE"})},audit:{getReport:()=>u("/api/audit/report"),scan:s=>u(`/api/audit/scan/${s}`,{method:"POST"}),getOptimizations:()=>u("/api/audit/optimizations"),optimize:()=>u("/api/audit/optimize",{method:"POST"})}};class Q{constructor(){this.ctx=null,this.enabled=localStorage.getItem("pisentinel_sound")==="true"}init(){if(!this.ctx&&typeof window<"u"){const e=window.AudioContext||window.webkitAudioContext;e&&(this.ctx=new e)}}toggle(){return this.enabled=!this.enabled,localStorage.setItem("pisentinel_sound",this.enabled?"true":"false"),this.enabled&&this.playBeep(880,.08,"sine"),this.enabled}playBeep(e=440,t=.1,n="sine",i=.05){if(this.enabled)try{if(this.init(),this.ctx&&this.ctx.state==="suspended"&&this.ctx.resume(),!this.ctx)return;const r=this.ctx.createOscillator(),o=this.ctx.createGain();r.type=n,r.frequency.setValueAtTime(e,this.ctx.currentTime),o.gain.setValueAtTime(i,this.ctx.currentTime),o.gain.exponentialRampToValueAtTime(1e-4,this.ctx.currentTime+t),r.connect(o),o.connect(this.ctx.destination),r.start(),r.stop(this.ctx.currentTime+t)}catch{}}playAttackAlert(){this.enabled&&(this.playBeep(880,.12,"triangle",.08),setTimeout(()=>{this.playBeep(1174,.18,"triangle",.06)},120))}playBan(){this.enabled&&(this.playBeep(320,.15,"sawtooth",.08),setTimeout(()=>{this.playBeep(180,.25,"sawtooth",.08)},100))}playSuccess(){this.enabled&&(this.playBeep(523.25,.08,"sine",.05),setTimeout(()=>{this.playBeep(659.25,.12,"sine",.05)},90))}}const p=new Q,a={user:null,authConfig:null,activeTab:"radar",telemetry:null,summary:null,ports:[],portScore:100,riskBreakdown:{},tools:[],attacks:[],bannedIps:[],wsConnected:!1,soundEnabled:p.enabled,ws:null},S=document.getElementById("app");function l(s,e="info"){let t=document.querySelector(".toast-container");t||(t=document.createElement("div"),t.className="toast-container",document.body.appendChild(t));const n=document.createElement("div");n.className=`toast ${e}`,n.innerHTML=`
+(function(){const e=document.createElement("link").relList;if(e&&e.supports&&e.supports("modulepreload"))return;for(const i of document.querySelectorAll('link[rel="modulepreload"]'))s(i);new MutationObserver(i=>{for(const r of i)if(r.type==="childList")for(const o of r.addedNodes)o.tagName==="LINK"&&o.rel==="modulepreload"&&s(o)}).observe(document,{childList:!0,subtree:!0});function t(i){const r={};return i.integrity&&(r.integrity=i.integrity),i.referrerPolicy&&(r.referrerPolicy=i.referrerPolicy),i.crossOrigin==="use-credentials"?r.credentials="include":i.crossOrigin==="anonymous"?r.credentials="omit":r.credentials="same-origin",r}function s(i){if(i.ep)return;i.ep=!0;const r=t(i);fetch(i.href,r)}})();const B="pisentinel_token",f={getToken:()=>localStorage.getItem(B),setToken:n=>localStorage.setItem(B,n),removeToken:()=>localStorage.removeItem(B)},N=()=>(window.location.pathname||"").includes("/sentinel")?"/sentinel":"";async function u(n,e={}){const t=f.getToken(),s={"Content-Type":"application/json",...e.headers||{}};t&&(s.Authorization=`Bearer ${t}`);const i=N(),r=n.startsWith("http")?n:`${i}${n}`,o=await fetch(r,{...e,headers:s});if(o.status===401){f.removeToken(),window.dispatchEvent(new CustomEvent("pisentinel:unauthorized"));const m=await o.json().catch(()=>({detail:"Session expirée"}));throw new Error(m.detail||"Non autorisé")}if(!o.ok){const m=await o.json().catch(()=>({detail:`Erreur HTTP ${o.status}`}));throw new Error(m.detail||`Erreur serveur (${o.status})`)}return o.json()}const d={auth:{getConfig:()=>u("/api/auth/config"),loginGoogle:n=>u("/api/auth/google",{method:"POST",body:JSON.stringify({credential:n})}),loginLocal:(n,e)=>u("/api/auth/login",{method:"POST",body:JSON.stringify({username:n,password:e})}),getMe:()=>u("/api/auth/me"),logout:()=>u("/api/auth/logout",{method:"POST"})},system:{getStatus:()=>u("/api/system/status"),getSummary:()=>u("/api/system/summary")},ports:{getPorts:()=>u("/api/ports"),getHardeningRules:()=>u("/api/ports/hardening-rules")},tools:{getTools:()=>u("/api/tools"),control:(n,e)=>u(`/api/tools/${n}/control`,{method:"POST",body:JSON.stringify({action:e})}),install:n=>u(`/api/tools/${n}/install`,{method:"POST"})},attacks:{getAttacks:()=>u("/api/attacks"),trigger:(n,e)=>u("/api/attacks/trigger",{method:"POST",body:JSON.stringify({ip:n,service:e})}),getBanned:()=>u("/api/attacks/banned"),ban:(n,e)=>u("/api/attacks/ban",{method:"POST",body:JSON.stringify({ip:n,reason:e})}),unban:n=>u(`/api/attacks/ban/${encodeURIComponent(n)}`,{method:"DELETE"})},audit:{getReport:()=>u("/api/audit/report"),scan:n=>u(`/api/audit/scan/${n}`,{method:"POST"}),getOptimizations:()=>u("/api/audit/optimizations"),optimize:()=>u("/api/audit/optimize",{method:"POST"})}};class Q{constructor(){this.ctx=null,this.enabled=localStorage.getItem("pisentinel_sound")==="true"}init(){if(!this.ctx&&typeof window<"u"){const e=window.AudioContext||window.webkitAudioContext;e&&(this.ctx=new e)}}toggle(){return this.enabled=!this.enabled,localStorage.setItem("pisentinel_sound",this.enabled?"true":"false"),this.enabled&&this.playBeep(880,.08,"sine"),this.enabled}playBeep(e=440,t=.1,s="sine",i=.05){if(this.enabled)try{if(this.init(),this.ctx&&this.ctx.state==="suspended"&&this.ctx.resume(),!this.ctx)return;const r=this.ctx.createOscillator(),o=this.ctx.createGain();r.type=s,r.frequency.setValueAtTime(e,this.ctx.currentTime),o.gain.setValueAtTime(i,this.ctx.currentTime),o.gain.exponentialRampToValueAtTime(1e-4,this.ctx.currentTime+t),r.connect(o),o.connect(this.ctx.destination),r.start(),r.stop(this.ctx.currentTime+t)}catch{}}playAttackAlert(){this.enabled&&(this.playBeep(880,.12,"triangle",.08),setTimeout(()=>{this.playBeep(1174,.18,"triangle",.06)},120))}playBan(){this.enabled&&(this.playBeep(320,.15,"sawtooth",.08),setTimeout(()=>{this.playBeep(180,.25,"sawtooth",.08)},100))}playSuccess(){this.enabled&&(this.playBeep(523.25,.08,"sine",.05),setTimeout(()=>{this.playBeep(659.25,.12,"sine",.05)},90))}}const p=new Q,a={user:null,authConfig:null,activeTab:"radar",telemetry:null,summary:null,ports:[],portScore:100,riskBreakdown:{},tools:[],attacks:[],bannedIps:[],wsConnected:!1,soundEnabled:p.enabled,ws:null},k=()=>document.getElementById("app")||document.body;function l(n,e="info"){let t=document.querySelector(".toast-container");t||(t=document.createElement("div"),t.className="toast-container",document.body.appendChild(t));const s=document.createElement("div");s.className=`toast ${e}`,s.innerHTML=`
     <span class="pulse-dot ${e==="error"?"danger":e==="success"?"":"warning"}"></span>
-    <span>${s}</span>
-  `,t.appendChild(n),setTimeout(()=>{n.style.opacity="0",n.style.transform="translateX(40px)",n.style.transition="all 0.3s ease",setTimeout(()=>n.remove(),300)},4e3)}function F(s){try{return new Date(s).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}catch{return"Récemment"}}function U(s){if(!s||s.length!==2)return"🌐";const e=s.toUpperCase().split("").map(t=>127397+t.charCodeAt(0));return String.fromCodePoint(...e)}async function O(){J();try{a.authConfig=await d.auth.getConfig()}catch(e){console.warn("Failed to load auth config:",e)}if(y.getToken())try{const e=await d.auth.getMe();a.user=e.user,await C(),w(),I();return}catch{y.removeToken()}E()}window.addEventListener("pisentinel:unauthorized",()=>{a.user=null,a.ws&&(a.ws.close(),a.ws=null),E()});async function C(){try{const[s,e,t,n,i]=await Promise.all([d.system.getSummary().catch(()=>null),d.ports.getPorts().catch(()=>({ports:[],score:100,risk_breakdown:{}})),d.tools.getTools().catch(()=>[]),d.attacks.getAttacks().catch(()=>({recent_attacks:[]})),d.attacks.getBanned().catch(()=>({banned:[]}))]);a.summary=s,a.ports=e.ports||[],a.portScore=e.score||100,a.riskBreakdown=e.risk_breakdown||{},a.tools=t||[],a.attacks=n.recent_attacks||[],a.bannedIps=i.banned||[]}catch(s){console.error("Error loading initial data:",s)}}function w(){const s=y.getToken();if(!s)return;const e=window.location.protocol==="https:"?"wss:":"ws:",t=N(),n=`${e}//${window.location.host}${t}/api/ws/telemetry?token=${encodeURIComponent(s)}`;a.ws=new WebSocket(n),a.ws.onopen=()=>{a.wsConnected=!0,D()},a.ws.onmessage=i=>{try{const r=JSON.parse(i.data);r.type==="telemetry"?(a.telemetry=r.data,K()):r.type==="attack_event"&&W(r.data)}catch(r){console.error("WS parse error:",r)}},a.ws.onclose=()=>{a.wsConnected=!1,D(),a.user&&setTimeout(w,4e3)}}function W(s){var e;a.attacks.unshift(s),a.attacks.length>50&&a.attacks.pop(),p.playAttackAlert(),l(`Alerte Attaque: ${s.type} depuis ${s.ip} (${((e=s.geo)==null?void 0:e.country)||"Inconnu"})`,"error"),a.activeTab==="radar"&&(T(),B())}function J(){S.innerHTML=`
+    <span>${n}</span>
+  `,t.appendChild(s),setTimeout(()=>{s.style.opacity="0",s.style.transform="translateX(40px)",s.style.transition="all 0.3s ease",setTimeout(()=>s.remove(),300)},4e3)}function F(n){try{return new Date(n).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}catch{return"Récemment"}}function U(n){if(!n||n.length!==2)return"🌐";const e=n.toUpperCase().split("").map(t=>127397+t.charCodeAt(0));return String.fromCodePoint(...e)}async function O(){try{J();try{a.authConfig=await d.auth.getConfig()}catch(e){console.warn("Failed to load auth config:",e)}if(f.getToken())try{const e=await d.auth.getMe();a.user=e.user,await C(),$(),A();return}catch{f.removeToken()}I()}catch(n){console.error("Fatal init error:",n);const e=k();e&&(e.innerHTML=`
+        <div style="padding:2rem; color:#ff3366; font-family:monospace; background:#060913; min-height:100vh;">
+          <h2>Erreur d'initialisation PiSentinel</h2>
+          <p>${n.message}</p>
+          <button onclick="location.reload()" style="margin-top:1rem; padding:0.5rem 1rem; background:#00f2fe; color:#000; border:none; border-radius:4px; cursor:pointer;">Recharger la page</button>
+        </div>
+      `)}}window.addEventListener("pisentinel:unauthorized",()=>{a.user=null,a.ws&&(a.ws.close(),a.ws=null),I()});async function C(){try{const[n,e,t,s,i]=await Promise.all([d.system.getSummary().catch(()=>null),d.ports.getPorts().catch(()=>({ports:[],score:100,risk_breakdown:{}})),d.tools.getTools().catch(()=>[]),d.attacks.getAttacks().catch(()=>({recent_attacks:[]})),d.attacks.getBanned().catch(()=>({banned:[]}))]);a.summary=n,a.ports=e.ports||[],a.portScore=e.score||100,a.riskBreakdown=e.risk_breakdown||{},a.tools=t||[],a.attacks=s.recent_attacks||[],a.bannedIps=i.banned||[]}catch(n){console.error("Error loading initial data:",n)}}function $(){const n=f.getToken();if(!n)return;const e=window.location.protocol==="https:"?"wss:":"ws:",t=N(),s=`${e}//${window.location.host}${t}/api/ws/telemetry?token=${encodeURIComponent(n)}`;a.ws=new WebSocket(s),a.ws.onopen=()=>{a.wsConnected=!0,D()},a.ws.onmessage=i=>{try{const r=JSON.parse(i.data);r.type==="telemetry"?(a.telemetry=r.data,K()):r.type==="attack_event"&&W(r.data)}catch(r){console.error("WS parse error:",r)}},a.ws.onclose=()=>{a.wsConnected=!1,D(),a.user&&setTimeout($,4e3)}}function W(n){var e;a.attacks.unshift(n),a.attacks.length>50&&a.attacks.pop(),p.playAttackAlert(),l(`Alerte Attaque: ${n.type} depuis ${n.ip} (${((e=n.geo)==null?void 0:e.country)||"Inconnu"})`,"error"),a.activeTab==="radar"&&(S(),E())}function J(){const n=k();n&&(n.innerHTML=`
     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; gap:1.5rem;">
       <div class="brand-logo" style="width:64px; height:64px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -12,7 +18,7 @@
         Initialisation de PiSentinel...
       </div>
     </div>
-  `}function E(){var s,e,t,n,i;S.innerHTML=`
+  `)}function I(){var e,t,s,i,r;const n=k();n&&(n.innerHTML=`
     <div style="display:flex; align-items:center; justify-content:center; min-height:100vh; padding:1.5rem;">
       <div class="modal-content" style="max-width:480px; width:100%;">
         <div style="text-align:center; margin-bottom:1.75rem;">
@@ -29,10 +35,10 @@
           </p>
         </div>
 
-        ${(s=a.authConfig)!=null&&s.google_enabled?`
+        ${(e=a.authConfig)!=null&&e.google_enabled?`
           <div style="margin-bottom:1.25rem;">
             <div id="googleBtn" style="display:flex; justify-content:center;"></div>
-            ${(e=a.authConfig)!=null&&e.whitelist_enabled?`
+            ${(t=a.authConfig)!=null&&t.whitelist_enabled?`
               <p style="font-size:0.75rem; color:var(--emerald); text-align:center; margin-top:0.6rem; font-family:var(--font-mono);">
                 🛡️ Accès restreint par liste blanche Google (${a.authConfig.allowed_email_count} comptes autorisés)
               </p>
@@ -64,7 +70,7 @@
         </form>
       </div>
     </div>
-  `,(t=a.authConfig)!=null&&t.google_enabled&&((i=(n=window.google)==null?void 0:n.accounts)!=null&&i.id)&&(window.google.accounts.id.initialize({client_id:a.authConfig.google_client_id,callback:Z}),window.google.accounts.id.renderButton(document.getElementById("googleBtn"),{theme:"filled_black",size:"large",text:"signin_with",shape:"pill",width:280})),document.getElementById("localLoginForm").addEventListener("submit",async r=>{r.preventDefault();const o=document.getElementById("loginUsername").value,m=document.getElementById("loginPassword").value;try{const v=await d.auth.loginLocal(o,m);y.setToken(v.access_token),a.user=v.user,p.playSuccess(),l("Authentification réussie !","success"),await C(),w(),I()}catch(v){p.playBan(),l(v.message,"error")}})}async function Z(s){try{const e=await d.auth.loginGoogle(s.credential);y.setToken(e.access_token),a.user=e.user,p.playSuccess(),l(`Bienvenue, ${e.user.name} !`,"success"),await C(),w(),I()}catch(e){p.playBan(),l(e.message,"error")}}function I(){var s,e,t,n,i,r,o,m,v;S.innerHTML=`
+  `,(s=a.authConfig)!=null&&s.google_enabled&&((r=(i=window.google)==null?void 0:i.accounts)!=null&&r.id)&&(window.google.accounts.id.initialize({client_id:a.authConfig.google_client_id,callback:Z}),window.google.accounts.id.renderButton(document.getElementById("googleBtn"),{theme:"filled_black",size:"large",text:"signin_with",shape:"pill",width:280})),document.getElementById("localLoginForm").addEventListener("submit",async o=>{o.preventDefault();const m=document.getElementById("loginUsername").value,g=document.getElementById("loginPassword").value;try{const v=await d.auth.loginLocal(m,g);f.setToken(v.access_token),a.user=v.user,p.playSuccess(),l("Authentification réussie !","success"),await C(),$(),A()}catch(v){p.playBan(),l(v.message,"error")}}))}async function Z(n){try{const e=await d.auth.loginGoogle(n.credential);f.setToken(e.access_token),a.user=e.user,p.playSuccess(),l(`Bienvenue, ${e.user.name} !`,"success"),await C(),$(),A()}catch(e){p.playBan(),l(e.message,"error")}}function A(){var e,t,s,i,r,o,m,g,v;const n=k();n&&(n.innerHTML=`
     <!-- Top Command Header -->
     <header class="soc-header">
       <div class="brand-section">
@@ -75,7 +81,7 @@
         </div>
         <div class="brand-text">
           <h1>PiSentinel <span class="brand-badge">v1.0.0</span></h1>
-          <div class="brand-sub">${((s=a.telemetry)==null?void 0:s.model)||"Raspberry Pi"} &bull; ${((e=a.telemetry)==null?void 0:e.hostname)||"raspberrypi"}</div>
+          <div class="brand-sub">${((e=a.telemetry)==null?void 0:e.model)||"Raspberry Pi"} &bull; ${((t=a.telemetry)==null?void 0:t.hostname)||"raspberrypi"}</div>
         </div>
       </div>
 
@@ -86,11 +92,11 @@
         </div>
         <div class="telemetry-pill">
           <span style="color:var(--cyan-neon);">TEMP</span>
-          <span id="headerTemp">${((n=(t=a.telemetry)==null?void 0:t.cpu)==null?void 0:n.temperature_c)||42}&deg;C</span>
+          <span id="headerTemp">${((i=(s=a.telemetry)==null?void 0:s.cpu)==null?void 0:i.temperature_c)||42}&deg;C</span>
         </div>
         <div class="telemetry-pill">
           <span style="color:var(--emerald);">SCORE SÉCURITÉ</span>
-          <span id="headerScore" style="font-weight:700;">${((i=a.summary)==null?void 0:i.overall_security_score)||90}%</span>
+          <span id="headerScore" style="font-weight:700;">${((r=a.summary)==null?void 0:r.overall_security_score)||90}%</span>
         </div>
       </div>
 
@@ -105,12 +111,12 @@
 
         <!-- User Profile Badge & Logout -->
         <div class="user-badge">
-          ${(r=a.user)!=null&&r.picture?`
+          ${(o=a.user)!=null&&o.picture?`
             <img src="${a.user.picture}" class="user-avatar" alt="Avatar" />
           `:`
-            <div class="user-avatar-placeholder">${(o=a.user)!=null&&o.name?a.user.name[0]:"A"}</div>
+            <div class="user-avatar-placeholder">${(m=a.user)!=null&&m.name?a.user.name[0]:"A"}</div>
           `}
-          <span style="font-weight:600;">${((m=a.user)==null?void 0:m.name)||"Admin"}</span>
+          <span style="font-weight:600;">${((g=a.user)==null?void 0:g.name)||"Admin"}</span>
           <button id="logoutBtn" class="btn btn-outline" style="padding:0.25rem 0.55rem; font-size:0.75rem; margin-left:0.3rem;">
             Sortir
           </button>
@@ -288,10 +294,10 @@
         </div>
       </div>
     </dialog>
-  `,document.querySelectorAll(".tab-btn").forEach(c=>{c.addEventListener("click",()=>{document.querySelectorAll(".tab-btn").forEach(g=>g.classList.remove("active")),c.classList.add("active"),a.activeTab=c.dataset.tab,H()})}),document.getElementById("soundToggleBtn").addEventListener("click",()=>{a.soundEnabled=p.toggle(),document.getElementById("soundToggleBtn").classList.toggle("active",a.soundEnabled),l(a.soundEnabled?"Sons tactiques activés":"Sons désactivés","info")}),document.getElementById("logoutBtn").addEventListener("click",async()=>{await d.auth.logout(),y.removeToken(),a.user=null,a.ws&&a.ws.close(),l("Déconnexion effectuée.","info"),E()}),document.getElementById("quickSimulateBtn").addEventListener("click",async()=>{var c;try{const g=await d.attacks.trigger();l(`Attaque simulée injectée depuis ${(c=g.event)==null?void 0:c.ip}`,"info")}catch(g){l(g.message,"error")}}),document.getElementById("quickBanModalBtn").addEventListener("click",()=>{document.getElementById("banIpInput").value="",document.getElementById("banModal").showModal()}),document.getElementById("banForm").addEventListener("submit",async c=>{c.preventDefault();const g=document.getElementById("banIpInput").value,b=document.getElementById("banReasonInput").value;try{const f=await d.attacks.ban(g,b);p.playBan(),l(f.message,"success"),document.getElementById("banModal").close();const h=await d.attacks.getBanned();a.bannedIps=h.banned||[],a.activeTab==="radar"&&k()}catch(f){l(f.message,"error")}}),document.getElementById("copyRulesBtn").addEventListener("click",()=>{const c=document.getElementById("rulesCode").innerText;navigator.clipboard.writeText(c),l("Règles UFW copiées dans le presse-papier !","success")}),H()}function D(){const s=document.getElementById("socPill");s&&(s.innerHTML=`
+  `,document.querySelectorAll(".tab-btn").forEach(c=>{c.addEventListener("click",()=>{document.querySelectorAll(".tab-btn").forEach(y=>y.classList.remove("active")),c.classList.add("active"),a.activeTab=c.dataset.tab,H()})}),document.getElementById("soundToggleBtn").addEventListener("click",()=>{a.soundEnabled=p.toggle(),document.getElementById("soundToggleBtn").classList.toggle("active",a.soundEnabled),l(a.soundEnabled?"Sons tactiques activés":"Sons désactivés","info")}),document.getElementById("logoutBtn").addEventListener("click",async()=>{await d.auth.logout(),f.removeToken(),a.user=null,a.ws&&a.ws.close(),l("Déconnexion effectuée.","info"),I()}),document.getElementById("quickSimulateBtn").addEventListener("click",async()=>{var c;try{const y=await d.attacks.trigger();l(`Attaque simulée injectée depuis ${(c=y.event)==null?void 0:c.ip}`,"info")}catch(y){l(y.message,"error")}}),document.getElementById("quickBanModalBtn").addEventListener("click",()=>{document.getElementById("banIpInput").value="",document.getElementById("banModal").showModal()}),document.getElementById("banForm").addEventListener("submit",async c=>{c.preventDefault();const y=document.getElementById("banIpInput").value,h=document.getElementById("banReasonInput").value;try{const b=await d.attacks.ban(y,h);p.playBan(),l(b.message,"success"),document.getElementById("banModal").close();const x=await d.attacks.getBanned();a.bannedIps=x.banned||[],a.activeTab==="radar"&&T()}catch(b){l(b.message,"error")}}),document.getElementById("copyRulesBtn").addEventListener("click",()=>{const c=document.getElementById("rulesCode").innerText;navigator.clipboard.writeText(c),l("Règles UFW copiées dans le presse-papier !","success")}),H())}function D(){const n=document.getElementById("socPill");n&&(n.innerHTML=`
       <span class="pulse-dot ${a.wsConnected?"":"danger"}"></span>
       <span>${a.wsConnected?"SURVEILLANCE ACTIVE":"DÉCONNECTÉ"}</span>
-    `)}function K(){var e;if(!a.telemetry)return;const s=document.getElementById("headerTemp");s&&(s.innerText=`${((e=a.telemetry.cpu)==null?void 0:e.temperature_c)||42}°C`),a.activeTab==="system"&&G()}function H(){a.activeTab==="radar"?k():a.activeTab==="ports"?V():a.activeTab==="tools"?x():a.activeTab==="system"&&G()}function k(){const s=document.getElementById("tabContent");s.innerHTML=`
+    `)}function K(){var e;if(!a.telemetry)return;const n=document.getElementById("headerTemp");n&&(n.innerText=`${((e=a.telemetry.cpu)==null?void 0:e.temperature_c)||42}°C`),a.activeTab==="system"&&G()}function H(){a.activeTab==="radar"?T():a.activeTab==="ports"?V():a.activeTab==="tools"?w():a.activeTab==="system"&&G()}function T(){const n=document.getElementById("tabContent");n.innerHTML=`
     <div class="grid-soc">
       <!-- Left Column: Radar Threat Visualizer -->
       <div class="panel" style="grid-column: span 7;">
@@ -393,12 +399,12 @@
                   </tr>
                 </thead>
                 <tbody>
-                  ${a.bannedIps.map(e=>{var t,n,i;return`
+                  ${a.bannedIps.map(e=>{var t,s,i;return`
                     <tr>
                       <td class="port-num" style="color:var(--crimson);">${e.ip}</td>
                       <td>
                         <span style="font-size:1.1rem; margin-right:0.4rem;">${U((t=e.geo)==null?void 0:t.country_code)}</span>
-                        ${((n=e.geo)==null?void 0:n.country)||"Inconnu"} (${((i=e.geo)==null?void 0:i.city)||"N/A"})
+                        ${((s=e.geo)==null?void 0:s.country)||"Inconnu"} (${((i=e.geo)==null?void 0:i.city)||"N/A"})
                       </td>
                       <td style="color:var(--text-muted);">${e.reason}</td>
                       <td style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">${F(e.timestamp)}</td>
@@ -416,17 +422,17 @@
         </div>
       </div>
     </div>
-  `,T(),B(),document.getElementById("refreshAttacksBtn").addEventListener("click",async()=>{const e=await d.attacks.getAttacks();a.attacks=e.recent_attacks||[],B(),T(),l("Journal des attaques rafraîchi.","info")}),document.querySelectorAll(".unban-btn").forEach(e=>{e.addEventListener("click",async()=>{const t=e.dataset.ip;try{const n=await d.attacks.unban(t);p.playSuccess(),l(n.message,"success");const i=await d.attacks.getBanned();a.bannedIps=i.banned||[],k()}catch(n){l(n.message,"error")}})})}function T(){const s=document.getElementById("radarThreats");if(!s)return;const e=a.attacks.slice(0,12).map((t,n)=>{var v,c,g;const i=((v=t.geo)==null?void 0:v.lat)||Math.random()*80-40,r=((c=t.geo)==null?void 0:c.lon)||Math.random()*320-160,o=Math.max(10,Math.min(90,(r+180)/360*80+10));return`
-      <div class="threat-marker" style="top:${Math.max(15,Math.min(85,(90-i)/180*70+15))}%; left:${o}%;" title="${t.ip} (${((g=t.geo)==null?void 0:g.country)||"Inconnu"}) - ${t.type}"></div>
-    `}).join("");s.innerHTML=e}function B(){const s=document.getElementById("attackFeedList");if(s){if(a.attacks.length===0){s.innerHTML=`
+  `,S(),E(),document.getElementById("refreshAttacksBtn").addEventListener("click",async()=>{const e=await d.attacks.getAttacks();a.attacks=e.recent_attacks||[],E(),S(),l("Journal des attaques rafraîchi.","info")}),document.querySelectorAll(".unban-btn").forEach(e=>{e.addEventListener("click",async()=>{const t=e.dataset.ip;try{const s=await d.attacks.unban(t);p.playSuccess(),l(s.message,"success");const i=await d.attacks.getBanned();a.bannedIps=i.banned||[],T()}catch(s){l(s.message,"error")}})})}function S(){const n=document.getElementById("radarThreats");if(!n)return;const e=a.attacks.slice(0,12).map((t,s)=>{var g,v,c;const i=((g=t.geo)==null?void 0:g.lat)||Math.random()*80-40,r=((v=t.geo)==null?void 0:v.lon)||Math.random()*320-160,o=Math.max(10,Math.min(90,(r+180)/360*80+10));return`
+      <div class="threat-marker" style="top:${Math.max(15,Math.min(85,(90-i)/180*70+15))}%; left:${o}%;" title="${t.ip} (${((c=t.geo)==null?void 0:c.country)||"Inconnu"}) - ${t.type}"></div>
+    `}).join("");n.innerHTML=e}function E(){const n=document.getElementById("attackFeedList");if(n){if(a.attacks.length===0){n.innerHTML=`
       <div style="text-align:center; padding:2rem; color:var(--text-dim); font-size:0.85rem;">
         Aucune tentative d'attaque enregistrée pour le moment.
       </div>
-    `;return}s.innerHTML=a.attacks.map(e=>{var t,n;return`
+    `;return}n.innerHTML=a.attacks.map(e=>{var t,s;return`
     <div class="attack-item">
       <div class="attack-meta">
         <span class="attack-country-flag" title="${((t=e.geo)==null?void 0:t.country)||"Inconnu"}">
-          ${U((n=e.geo)==null?void 0:n.country_code)}
+          ${U((s=e.geo)==null?void 0:s.country_code)}
         </span>
         <div>
           <div class="attack-ip">${e.ip}</div>
@@ -443,7 +449,7 @@
         </div>
       </div>
     </div>
-  `}).join(""),s.querySelectorAll(".quick-ban-btn").forEach(e=>{e.addEventListener("click",async()=>{const t=e.dataset.ip;try{const n=await d.attacks.ban(t,"Bloqué en 1 clic depuis le flux d'attaques");p.playBan(),l(n.message,"success");const i=await d.attacks.getBanned();a.bannedIps=i.banned||[],k()}catch(n){l(n.message,"error")}})})}}function V(){const s=document.getElementById("tabContent");s.innerHTML=`
+  `}).join(""),n.querySelectorAll(".quick-ban-btn").forEach(e=>{e.addEventListener("click",async()=>{const t=e.dataset.ip;try{const s=await d.attacks.ban(t,"Bloqué en 1 clic depuis le flux d'attaques");p.playBan(),l(s.message,"success");const i=await d.attacks.getBanned();a.bannedIps=i.banned||[],T()}catch(s){l(s.message,"error")}})})}}function V(){const n=document.getElementById("tabContent");n.innerHTML=`
     <div class="grid-soc">
       <!-- Port Score Header Card -->
       <div class="panel" style="grid-column: span 12;">
@@ -536,7 +542,7 @@
       </div>
     </div>
   `,document.getElementById("rescanPortsBtn").addEventListener("click",async()=>{try{l("Analyse des ports en cours...","info");const e=await d.ports.getPorts();a.ports=e.ports||[],a.portScore=e.score||100,a.riskBreakdown=e.risk_breakdown||{},V(),l("Scan des ports terminé.","success")}catch(e){l(e.message,"error")}}),document.getElementById("showUfwRulesBtn").addEventListener("click",async()=>{try{const e=await d.ports.getHardeningRules();document.getElementById("rulesCode").innerText=e.commands.join(`
-`),document.getElementById("rulesModal").showModal()}catch(e){l(e.message,"error")}})}function x(){const s=document.getElementById("tabContent");s.innerHTML=`
+`),document.getElementById("rulesModal").showModal()}catch(e){l(e.message,"error")}})}function w(){const n=document.getElementById("tabContent");n.innerHTML=`
     <div style="margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
       <div>
         <h2 style="font-family:var(--font-cyber); font-size:1.5rem; text-transform:uppercase; letter-spacing:1px;">
@@ -637,7 +643,7 @@
         </div>
       </div>
     </div>
-  `,j(),document.querySelectorAll(".tool-action-btn").forEach(t=>{t.addEventListener("click",async()=>{const n=t.dataset.tool,i=t.dataset.action;try{t.disabled=!0;const r=await d.tools.control(n,i);p.playSuccess(),l(r.message,"success"),a.tools=await d.tools.getTools(),x()}catch(r){l(r.message,"error")}})}),document.querySelectorAll(".tool-install-btn").forEach(t=>{t.addEventListener("click",async()=>{const n=t.dataset.tool;try{t.disabled=!0,t.innerText="Installation en cours...";const i=await d.tools.install(n);p.playSuccess(),l(i.message,"success")}catch(i){p.playAlert(),l(i.message,"error")}finally{a.tools=await d.tools.getTools(),x()}})}),document.querySelectorAll(".run-audit-btn").forEach(t=>{t.addEventListener("click",async()=>{const n=t.dataset.tool;try{t.disabled=!0,t.innerText="Scan en cours...";const i=await d.audit.scan(n);p.playSuccess(),l(i.message,"info")}catch(i){p.playAlert(),l(i.message,"error")}finally{setTimeout(()=>{t.disabled=!1,t.innerText="🚀 Lancer Scan"},5e3)}})}),document.querySelectorAll(".view-audit-btn").forEach(t=>{t.addEventListener("click",()=>{const n=t.dataset.tool;X(n)})});const e=document.getElementById("applyHardeningBtn");e&&e.addEventListener("click",async()=>{try{e.disabled=!0,e.innerText="Application en cours...";const t=await d.audit.optimize();p.playSuccess(),l(t.message,"success"),await j(),a.summary=await d.system.getSummary(),updateSummaryHeader()}catch(t){p.playAlert(),l(t.message,"error")}finally{e.disabled=!1,e.innerText="⚡ Appliquer le Durcissement Recommandé"}}),document.getElementById("refreshToolsBtn").addEventListener("click",async()=>{a.tools=await d.tools.getTools(),x(),l("Statut des outils actualisé.","info")})}async function j(){try{const s=await d.audit.getOptimizations(),e=document.getElementById("hardeningChecksContainer");if(!e)return;e.innerHTML=s.map(t=>`
+  `,j(),document.querySelectorAll(".tool-action-btn").forEach(t=>{t.addEventListener("click",async()=>{const s=t.dataset.tool,i=t.dataset.action;try{t.disabled=!0;const r=await d.tools.control(s,i);p.playSuccess(),l(r.message,"success"),a.tools=await d.tools.getTools(),w()}catch(r){l(r.message,"error")}})}),document.querySelectorAll(".tool-install-btn").forEach(t=>{t.addEventListener("click",async()=>{const s=t.dataset.tool;try{t.disabled=!0,t.innerText="Installation en cours...";const i=await d.tools.install(s);p.playSuccess(),l(i.message,"success")}catch(i){p.playAlert(),l(i.message,"error")}finally{a.tools=await d.tools.getTools(),w()}})}),document.querySelectorAll(".run-audit-btn").forEach(t=>{t.addEventListener("click",async()=>{const s=t.dataset.tool;try{t.disabled=!0,t.innerText="Scan en cours...";const i=await d.audit.scan(s);p.playSuccess(),l(i.message,"info")}catch(i){p.playAlert(),l(i.message,"error")}finally{setTimeout(()=>{t.disabled=!1,t.innerText="🚀 Lancer Scan"},5e3)}})}),document.querySelectorAll(".view-audit-btn").forEach(t=>{t.addEventListener("click",()=>{const s=t.dataset.tool;X(s)})});const e=document.getElementById("applyHardeningBtn");e&&e.addEventListener("click",async()=>{try{e.disabled=!0,e.innerText="Application en cours...";const t=await d.audit.optimize();p.playSuccess(),l(t.message,"success"),await j(),a.summary=await d.system.getSummary(),updateSummaryHeader()}catch(t){p.playAlert(),l(t.message,"error")}finally{e.disabled=!1,e.innerText="⚡ Appliquer le Durcissement Recommandé"}}),document.getElementById("refreshToolsBtn").addEventListener("click",async()=>{a.tools=await d.tools.getTools(),w(),l("Statut des outils actualisé.","info")})}async function j(){try{const n=await d.audit.getOptimizations(),e=document.getElementById("hardeningChecksContainer");if(!e)return;e.innerHTML=n.map(t=>`
       <div class="hardening-card ${t.compliant?"compliant":"non-compliant"}">
         <div>
           <div style="font-size:0.72rem; color:var(--cyan-neon); font-family:var(--font-mono); text-transform:uppercase;">${t.category}</div>
@@ -649,7 +655,7 @@
           ${t.compliant?"ACTIF":"À DURCIR"}
         </span>
       </div>
-    `).join("")}catch(s){console.error("Error loading hardening checks:",s)}}async function X(s){p.playClick();const e=document.getElementById("auditReportModal");e&&e.remove();const t=document.createElement("dialog");t.id="auditReportModal",t.className="soc-modal",t.innerHTML=`
+    `).join("")}catch(n){console.error("Error loading hardening checks:",n)}}async function X(n){p.playClick();const e=document.getElementById("auditReportModal");e&&e.remove();const t=document.createElement("dialog");t.id="auditReportModal",t.className="soc-modal",t.innerHTML=`
     <div class="modal-content audit-dialog-content">
       <div class="modal-header">
         <h3 class="modal-title">Chargement du rapport...</h3>
@@ -657,11 +663,11 @@
       </div>
       <div id="auditModalBody" style="padding:1rem 0;">
         <div style="color:var(--text-dim); font-family:var(--font-mono); text-align:center;">
-          Lecture des journaux système de ${s.toUpperCase()}...
+          Lecture des journaux système de ${n.toUpperCase()}...
         </div>
       </div>
     </div>
-  `,document.body.appendChild(t),t.showModal(),document.getElementById("closeAuditModalBtn").addEventListener("click",()=>{t.close(),t.remove()});try{const n=await d.audit.getReport(),i=document.getElementById("auditModalBody"),r=t.querySelector(".modal-title");if(s==="lynis"){const o=n.lynis;if(r.innerHTML="🛡️ Rapport d'Audit Lynis",!o.available){i.innerHTML=`<p style="color:var(--amber);">${o.message||"Aucun rapport disponible."}</p>`;return}i.innerHTML=`
+  `,document.body.appendChild(t),t.showModal(),document.getElementById("closeAuditModalBtn").addEventListener("click",()=>{t.close(),t.remove()});try{const s=await d.audit.getReport(),i=document.getElementById("auditModalBody"),r=t.querySelector(".modal-title");if(n==="lynis"){const o=s.lynis;if(r.innerHTML="🛡️ Rapport d'Audit Lynis",!o.available){i.innerHTML=`<p style="color:var(--amber);">${o.message||"Aucun rapport disponible."}</p>`;return}i.innerHTML=`
         <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); padding:1rem; border-radius:var(--radius-sm); margin-bottom:1.25rem;">
           <div>
             <div style="font-size:0.8rem; color:var(--text-dim); text-transform:uppercase;">Score de Durcissement (Hardening Index)</div>
@@ -686,7 +692,7 @@
             </div>
           `).join("")}
         </div>
-      `}else if(s==="rkhunter"){const o=n.rkhunter;if(r.innerHTML="🔍 Rapport Rootkit Hunter",!o.available){i.innerHTML=`<p style="color:var(--amber);">${o.message||"Aucun rapport disponible."}</p>`;return}i.innerHTML=`
+      `}else if(n==="rkhunter"){const o=s.rkhunter;if(r.innerHTML="🔍 Rapport Rootkit Hunter",!o.available){i.innerHTML=`<p style="color:var(--amber);">${o.message||"Aucun rapport disponible."}</p>`;return}i.innerHTML=`
         <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); padding:1rem; border-radius:var(--radius-sm); margin-bottom:1.25rem;">
           <div>
             <div style="font-size:0.8rem; color:var(--text-dim); text-transform:uppercase;">État du Système</div>
@@ -717,7 +723,7 @@
             </div>
           `).join("")}
         </div>
-      `}}catch(n){document.getElementById("auditModalBody").innerHTML=`<p style="color:var(--crimson);">Erreur: ${n.message}</p>`}}function G(){var n,i,r,o,m,v,c,g,b,f,h,A,z,M,P,L,_,q,R;const s=document.getElementById("tabContent"),e=a.telemetry||{hostname:"raspberrypi",model:"Raspberry Pi",os:"Linux",uptime:"N/A",cpu:{percent:12,temperature_c:44.5,cores:4},memory:{total_mb:3800,used_mb:850,percent:22},disk:{total_gb:32,used_gb:7.5,percent:23},network:{bytes_sent_mb:14.2,bytes_recv_mb:45.8}},t=(((n=e.cpu)==null?void 0:n.temperature_c)||0)>60;s.innerHTML=`
+      `}}catch(s){document.getElementById("auditModalBody").innerHTML=`<p style="color:var(--crimson);">Erreur: ${s.message}</p>`}}function G(){var s,i,r,o,m,g,v,c,y,h,b,x,M,z,P,L,_,R,q;const n=document.getElementById("tabContent"),e=a.telemetry||{hostname:"raspberrypi",model:"Raspberry Pi",os:"Linux",uptime:"N/A",cpu:{percent:12,temperature_c:44.5,cores:4},memory:{total_mb:3800,used_mb:850,percent:22},disk:{total_gb:32,used_gb:7.5,percent:23},network:{bytes_sent_mb:14.2,bytes_recv_mb:45.8}},t=(((s=e.cpu)==null?void 0:s.temperature_c)||0)>60;n.innerHTML=`
     <div class="grid-soc">
       <!-- Hardware System Overview Card -->
       <div class="panel" style="grid-column: span 12;">
@@ -781,11 +787,11 @@
           <div class="gauge-header">
             <span class="gauge-title">Température SoC (RPi)</span>
             <span class="gauge-val" style="color:${t?"var(--crimson)":"var(--emerald)"};">
-              ${((v=e.cpu)==null?void 0:v.temperature_c)||42}&deg;C
+              ${((g=e.cpu)==null?void 0:g.temperature_c)||42}&deg;C
             </span>
           </div>
           <div class="progress-track">
-            <div class="progress-fill ${t?"warm":""}" style="width:${Math.min(100,(((c=e.cpu)==null?void 0:c.temperature_c)||40)/85*100)}%;"></div>
+            <div class="progress-fill ${t?"warm":""}" style="width:${Math.min(100,(((v=e.cpu)==null?void 0:v.temperature_c)||40)/85*100)}%;"></div>
           </div>
           <div class="gauge-sub">
             <span>Seuil critique: 80°C</span>
@@ -797,14 +803,14 @@
         <div class="gauge-card">
           <div class="gauge-header">
             <span class="gauge-title">Mémoire Vive (RAM)</span>
-            <span class="gauge-val" style="color:var(--emerald);">${((g=e.memory)==null?void 0:g.percent)||0}%</span>
+            <span class="gauge-val" style="color:var(--emerald);">${((c=e.memory)==null?void 0:c.percent)||0}%</span>
           </div>
           <div class="progress-track">
-            <div class="progress-fill" style="width:${((b=e.memory)==null?void 0:b.percent)||0}%;"></div>
+            <div class="progress-fill" style="width:${((y=e.memory)==null?void 0:y.percent)||0}%;"></div>
           </div>
           <div class="gauge-sub">
-            <span>${((f=e.memory)==null?void 0:f.used_mb)||0} Mo Utilisés</span>
-            <span>${((h=e.memory)==null?void 0:h.total_mb)||0} Mo Total</span>
+            <span>${((h=e.memory)==null?void 0:h.used_mb)||0} Mo Utilisés</span>
+            <span>${((b=e.memory)==null?void 0:b.total_mb)||0} Mo Total</span>
           </div>
         </div>
 
@@ -812,13 +818,13 @@
         <div class="gauge-card">
           <div class="gauge-header">
             <span class="gauge-title">Stockage SD / NVMe</span>
-            <span class="gauge-val" style="color:var(--purple);">${((A=e.disk)==null?void 0:A.percent)||0}%</span>
+            <span class="gauge-val" style="color:var(--purple);">${((x=e.disk)==null?void 0:x.percent)||0}%</span>
           </div>
           <div class="progress-track">
-            <div class="progress-fill" style="width:${((z=e.disk)==null?void 0:z.percent)||0}%;"></div>
+            <div class="progress-fill" style="width:${((M=e.disk)==null?void 0:M.percent)||0}%;"></div>
           </div>
           <div class="gauge-sub">
-            <span>${((M=e.disk)==null?void 0:M.used_gb)||0} Go Occupés</span>
+            <span>${((z=e.disk)==null?void 0:z.used_gb)||0} Go Occupés</span>
             <span>${((P=e.disk)==null?void 0:P.total_gb)||0} Go Total</span>
           </div>
         </div>
@@ -849,9 +855,9 @@
           <div>
             <div style="font-size:0.8rem; color:var(--text-dim); text-transform:uppercase;">Total Données Émises (TX)</div>
             <div style="font-family:var(--font-cyber); font-size:2.2rem; font-weight:700; color:var(--cyan-neon); margin-top:0.3rem;">
-              ${((q=e.network)==null?void 0:q.bytes_sent_mb)||0} <span style="font-size:1rem;">Mo</span>
+              ${((R=e.network)==null?void 0:R.bytes_sent_mb)||0} <span style="font-size:1rem;">Mo</span>
             </div>
-            <div style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono);">${((R=e.network)==null?void 0:R.packets_sent)||0} paquets</div>
+            <div style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono);">${((q=e.network)==null?void 0:q.packets_sent)||0} paquets</div>
           </div>
         </div>
       </div>
