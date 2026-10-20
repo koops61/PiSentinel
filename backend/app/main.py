@@ -31,6 +31,7 @@ app = FastAPI(
     title="PiSentinel - Raspberry Pi Security Hub",
     description="All-in-One Real-Time Security Operations Center for Raspberry Pi",
     version="1.0.0",
+    root_path=settings.ROOT_PATH,
     lifespan=lifespan
 )
 
@@ -94,4 +95,4 @@ if os.path.exists(frontend_dist):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("app.main:app", host=settings.HOST, port=settings.PORT, reload=True)
+    uvicorn.run("app.main:app", host=settings.HOST, port=settings.PORT, reload=(settings.ENVIRONMENT == "development"))

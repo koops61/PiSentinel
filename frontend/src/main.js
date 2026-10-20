@@ -1,4 +1,4 @@
-import { api, authStorage } from './utils/api.js';
+import { api, authStorage, getBasePath } from './utils/api.js';
 import { sounds } from './utils/sound.js';
 
 // Application State
@@ -136,7 +136,8 @@ function connectWebSocket() {
   if (!token) return;
 
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.host}/api/ws/telemetry?token=${encodeURIComponent(token)}`;
+  const basePath = getBasePath();
+  const wsUrl = `${protocol}//${window.location.host}${basePath}/api/ws/telemetry?token=${encodeURIComponent(token)}`;
 
   state.ws = new WebSocket(wsUrl);
 

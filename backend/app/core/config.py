@@ -19,6 +19,7 @@ class Settings(BaseSettings):
 
     HOST: str = "0.0.0.0"
     PORT: int = 8000
+    ROOT_PATH: str = ""
     CORS_ORIGINS: str = "*"
 
     class Config:

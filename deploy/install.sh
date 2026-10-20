@@ -16,7 +16,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 CURRENT_USER=${SUDO_USER:-pi}
-INSTALL_DIR="/opt/pisentinel"
+INSTALL_DIR="/var/www/html/sentinel"
 
 echo "📦 1. Mise à jour des paquets & installation des dépendances système..."
 apt-get update -y
@@ -25,7 +25,7 @@ apt-get install -y python3 python3-pip python3-venv ufw fail2ban lynis curl git
 echo "📁 2. Configuration du répertoire d'installation ($INSTALL_DIR)..."
 mkdir -p "$INSTALL_DIR"
 cp -r ../* "$INSTALL_DIR/" || true
-chown -R "$CURRENT_USER:$CURRENT_USER" "$INSTALL_DIR"
+chown -R "$CURRENT_USER:www-data" "$INSTALL_DIR" 2>/dev/null || chown -R "$CURRENT_USER:$CURRENT_USER" "$INSTALL_DIR"
 
 echo "🐍 3. Création de l'environnement virtuel Python..."
 sudo -u "$CURRENT_USER" python3 -m venv "$INSTALL_DIR/.venv"
@@ -38,6 +38,7 @@ if [ ! -f "$INSTALL_DIR/backend/.env" ]; then
   # Générer une clé secrète aléatoire
   RANDOM_SECRET=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 48)
   sed -i "s|SECRET_KEY=.*|SECRET_KEY=$RANDOM_SECRET|g" "$INSTALL_DIR/backend/.env"
+  sed -i "s|ROOT_PATH=.*|ROOT_PATH=/sentinel|g" "$INSTALL_DIR/backend/.env" 2>/dev/null || true
   echo "🔑 Nouvelle clé SECRET_KEY générée aléatoirement."
 fi
 

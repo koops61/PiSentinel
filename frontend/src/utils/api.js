@@ -8,6 +8,14 @@ export const authStorage = {
   removeToken: () => localStorage.removeItem(TOKEN_KEY)
 };
 
+export const getBasePath = () => {
+  const pathname = window.location.pathname || '';
+  if (pathname.includes('/sentinel')) {
+    return '/sentinel';
+  }
+  return '';
+};
+
 export async function apiFetch(endpoint, options = {}) {
   const token = authStorage.getToken();
   const headers = {
@@ -19,7 +27,10 @@ export async function apiFetch(endpoint, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(endpoint, {
+  const basePath = getBasePath();
+  const url = endpoint.startsWith('http') ? endpoint : `${basePath}${endpoint}`;
+
+  const response = await fetch(url, {
     ...options,
     headers
   });

@@ -1,75 +1,135 @@
-# 🚀 Guide de Déploiement & Configuration Google OAuth sur Raspberry Pi
+# 🚀 Guide de Déploiement & Configuration sur Raspberry Pi
 
-Ce guide vous accompagne pas à pas pour déployer **PiSentinel** sur votre Raspberry Pi et configurer l'authentification sécurisée avec Google Sign-In et la liste blanche d'administrateurs.
+Ce guide vous accompagne pas à pas pour déployer **PiSentinel** dans `/var/www/html/sentinel` et le rendre accessible via **`https://mon-domaine.com/sentinel`** derrière votre serveur web existant (Nginx ou Apache).
 
 ---
 
-## 1. Déploiement en 1 ligne sur votre Raspberry Pi
+## 1. Déploiement dans `/var/www/html/sentinel`
 
 Connectez-vous en SSH à votre Raspberry Pi, puis :
 
 ```bash
 # 1. Cloner ou transférer le projet sur votre Raspberry Pi
 cd ~
-git clone <votre_repo> pisentinel
-cd pisentinel/deploy
+git clone <votre_repo> pisentinel-src
+cd pisentinel-src/deploy
 
 # 2. Rendre le script exécutable et lancer l'installation
 chmod +x install.sh
 sudo ./install.sh
 ```
 
-Le script configure automatiquement :
-- L'environnement virtuel Python (`.venv`)
+Le script installe automatiquement :
+- L'application dans **`/var/www/html/sentinel`**
+- L'environnement virtuel Python isolé dans `/var/www/html/sentinel/.venv`
 - Les paquets de sécurité Linux (`ufw`, `fail2ban`, `lynis`)
-- Le service `systemd` `pisentinel.service` démarrant automatiquement au boot du Raspberry Pi.
+- Le service `systemd` `pisentinel.service` configuré pour démarrer sur `127.0.0.1:8000`
 
 ---
 
-## 2. Configuration de Google OAuth 2.0 (Google Sign-In)
+## 2. Configuration du Reverse Proxy (Nginx ou Apache)
 
-Pour sécuriser l'accès avec votre compte Google :
+Pour que PiSentinel soit accessible sur **`https://mon-domaine.com/sentinel`** sans toucher à votre site existant sur la racine :
 
-1. Rendez-vous sur la **[Google Cloud Console](https://console.cloud.google.com/)**.
-2. Créez un nouveau projet (ex: `Raspberry Pi Security`).
-3. Allez dans **APIs & Services** > **OAuth consent screen (Écran de consentement OAuth)** :
-   - Type d'utilisateur : **Externe** (ou Interne si Google Workspace).
-   - Remplissez le nom de l'application : `PiSentinel`.
-   - Ajoutez votre adresse email comme contact développeur et enregistrez.
-4. Allez dans **Credentials (Identifiants)** > **Create Credentials** > **OAuth client ID** :
-   - Type d'application : **Web application (Application Web)**.
-   - Nom : `PiSentinel Web Client`.
-   - **Origines JavaScript autorisées (Authorized JavaScript origins)** :
-     - `http://localhost:8000`
-     - `http://<IP_DE_VOTRE_RASPBERRY>:8000` (ex: `http://192.168.1.50:8000`)
-5. Cliquez sur **Créer** et copiez votre **Client ID** (se terminant par `.apps.googleusercontent.com`).
+### Cas A : Si vous utilisez NGINX (Recommandé)
 
----
-
-## 3. Configuration de la Liste Blanche (Whitelist)
-
-Ouvrez le fichier de configuration `.env` sur le Raspberry Pi :
+Ouvrez la configuration de votre site dans `/etc/nginx/sites-available/` (ou votre fichier de configuration SSL) :
 
 ```bash
-sudo nano /opt/pisentinel/backend/.env
+sudo nano /etc/nginx/sites-available/default
 ```
 
-Modifiez les lignes suivantes :
+À l'intérieur du bloc `server { ... }` (qui gère le port 443 / SSL), ajoutez ce bloc `location /sentinel` :
+
+```nginx
+    # --- PiSentinel Hub (Subpath /sentinel) ---
+    location /sentinel/ {
+        proxy_pass http://127.0.0.1:8000/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+```
+
+Testez et rechargez Nginx :
+```bash
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+---
+
+### Cas B : Si vous utilisez APACHE
+
+Activez les modules proxy et proxy_wstunnel :
+```bash
+sudo a2enmod proxy proxy_http proxy_wstunnel
+```
+
+Dans la configuration de votre VirtualHost SSL (`/etc/apache2/sites-available/000-default-le-ssl.conf` ou votre fichier vhost) :
+
+```apache
+    # --- WebSocket Stream PiSentinel ---
+    ProxyPass /sentinel/api/ws/ ws://127.0.0.1:8000/api/ws/
+    ProxyPassReverse /sentinel/api/ws/ ws://127.0.0.1:8000/api/ws/
+
+    # --- Application PiSentinel ---
+    ProxyPass /sentinel http://127.0.0.1:8000
+    ProxyPassReverse /sentinel http://127.0.0.1:8000
+    ProxyPreserveHost On
+```
+
+Rechargez Apache :
+```bash
+sudo systemctl restart apache2
+```
+
+---
+
+## 3. Configuration de Google OAuth 2.0 (Google Sign-In)
+
+1. Rendez-vous sur la **[Google Cloud Console](https://console.cloud.google.com/)**.
+2. Allez dans **APIs & Services** > **OAuth consent screen** et créez un écran externe `PiSentinel`.
+3. Allez dans **Credentials** > **Create Credentials** > **OAuth client ID** :
+   - Type d'application : **Web application**.
+   - **Authorized JavaScript origins (Origines JavaScript autorisées)** :
+     - `https://mon-domaine.com`
+     - `http://localhost:8000` (pour les tests locaux)
+4. Copiez votre **Client ID**.
+
+---
+
+## 4. Configuration de la Liste Blanche (Whitelist)
+
+Éditez le fichier `.env` dans `/var/www/html/sentinel/backend/.env` :
+
+```bash
+sudo nano /var/www/html/sentinel/backend/.env
+```
+
+Renseignez vos paramètres :
 
 ```ini
-# Votre Client ID Google
+# Google OAuth
 GOOGLE_CLIENT_ID=xxxxxxxxxxxx-xxxxxxxxxxxxxxxx.apps.googleusercontent.com
 
 # Adresses email Google autorisées à administrer le Raspberry Pi
-# (Seules les adresses listées ici pourront franchir l'authentification)
 ALLOWED_EMAILS=votre.email@gmail.com,autre.admin@gmail.com
 
-# Mot de passe de secours administrateur (si hors-ligne ou panne Google)
+# Mot de passe de secours administrateur local
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=VotreMotDePasseTresSecurise2026!
+
+# Port et sous-chemin de reverse proxy
+PORT=8000
+ROOT_PATH=/sentinel
 ```
 
-Redémarrez le service pour appliquer les changements :
+Redémarrez le service :
 
 ```bash
 sudo systemctl restart pisentinel
@@ -77,19 +137,10 @@ sudo systemctl restart pisentinel
 
 ---
 
-## 4. Gestion du Service Systemd
-
-| Action | Commande |
-| :--- | :--- |
-| **Vérifier le statut** | `sudo systemctl status pisentinel` |
-| **Redémarrer** | `sudo systemctl restart pisentinel` |
-| **Arrêter** | `sudo systemctl stop pisentinel` |
-| **Consulter les logs en direct** | `sudo journalctl -u pisentinel -f` |
-
----
-
 ## 5. Accès au Tableau de Bord
 
-Ouvrez votre navigateur web sur votre ordinateur, tablette ou smartphone connecté au même réseau :
+Rendez-vous simplement sur :
 
-👉 **`http://<IP_DE_VOTRE_RASPBERRY>:8000`**
+👉 **`https://mon-domaine.com/sentinel/`**
+
+Le tableau de bord, les flux WebSockets temps réel, l'audit des ports et l'authentification Google sont immédiatement opérationnels !
