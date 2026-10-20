@@ -77,19 +77,22 @@ sudo a2enmod proxy proxy_http proxy_wstunnel
 Dans la configuration de votre VirtualHost SSL (`/etc/apache2/sites-available/000-default-le-ssl.conf` ou votre fichier vhost) :
 
 ```apache
+    # --- Redirection automatique avec slash terminal ---
+    RedirectMatch 301 ^/sentinel$ /sentinel/
+
     # --- WebSocket Stream PiSentinel ---
     ProxyPass /sentinel/api/ws/ ws://127.0.0.1:8443/api/ws/
     ProxyPassReverse /sentinel/api/ws/ ws://127.0.0.1:8443/api/ws/
 
     # --- Application PiSentinel ---
-    ProxyPass /sentinel http://127.0.0.1:8443
-    ProxyPassReverse /sentinel http://127.0.0.1:8443
+    ProxyPass /sentinel/ http://127.0.0.1:8443/
+    ProxyPassReverse /sentinel/ http://127.0.0.1:8443/
     ProxyPreserveHost On
 ```
 
 Rechargez Apache :
 ```bash
-sudo systemctl restart apache2
+sudo apache2ctl configtest && sudo systemctl reload apache2
 ```
 
 ---

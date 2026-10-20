@@ -88,20 +88,20 @@ if os.path.exists(frontend_dist):
         app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
         app.mount("/sentinel/assets", StaticFiles(directory=assets_dir), name="sentinel_assets")
 
-    @app.get("/sentinel")
-    async def redirect_sentinel():
+    @app.api_route("/sentinel", methods=["GET", "HEAD"])
+    async def redirect_sentinel(request: Request):
         return RedirectResponse(url="/sentinel/", status_code=301)
 
-    @app.get("/")
-    @app.get("/sentinel/")
-    async def serve_index():
+    @app.api_route("/", methods=["GET", "HEAD"])
+    @app.api_route("/sentinel/", methods=["GET", "HEAD"])
+    async def serve_index(request: Request):
         index_file = os.path.join(frontend_dist, "index.html")
         if os.path.exists(index_file):
-            return FileResponse(index_file)
+            return FileResponse(index_file, media_type="text/html; charset=utf-8")
         return {"detail": "PiSentinel frontend dist missing"}
 
-    @app.get("/{full_path:path}")
-    async def serve_spa(full_path: str):
+    @app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
+    async def serve_spa(full_path: str, request: Request):
         clean_path = full_path
         if clean_path.startswith("sentinel/"):
             clean_path = clean_path[len("sentinel/"):]
@@ -110,6 +110,12 @@ if os.path.exists(frontend_dist):
 
         file_path = os.path.join(frontend_dist, clean_path)
         if clean_path and os.path.isfile(file_path):
+            if file_path.endswith(".js"):
+                return FileResponse(file_path, media_type="application/javascript; charset=utf-8")
+            elif file_path.endswith(".css"):
+                return FileResponse(file_path, media_type="text/css; charset=utf-8")
+            elif file_path.endswith(".svg"):
+                return FileResponse(file_path, media_type="image/svg+xml")
             return FileResponse(file_path)
 
         # Never return index.html for missing assets/ or API requests
@@ -118,13 +124,13 @@ if os.path.exists(frontend_dist):
 
         index_file = os.path.join(frontend_dist, "index.html")
         if os.path.exists(index_file):
-            return FileResponse(index_file)
+            return FileResponse(index_file, media_type="text/html; charset=utf-8")
         return {"detail": "Not Found"}
 else:
-    @app.get("/")
-    @app.get("/sentinel")
-    @app.get("/sentinel/")
-    async def serve_missing_frontend():
+    @app.api_route("/", methods=["GET", "HEAD"])
+    @app.api_route("/sentinel", methods=["GET", "HEAD"])
+    @app.api_route("/sentinel/", methods=["GET", "HEAD"])
+    async def serve_missing_frontend(request: Request):
         return {
             "service": "PiSentinel Security Hub API",
             "status": "online",

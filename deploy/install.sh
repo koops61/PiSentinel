@@ -117,13 +117,20 @@ elif systemctl is-active --quiet apache2 2>/dev/null || command -v apache2 >/dev
 
   cat << 'EOF' > /etc/apache2/conf-available/pisentinel.conf
 # --- PiSentinel Reverse Proxy (Subpath /sentinel) ---
+<IfModule mod_alias.c>
+    RedirectMatch 301 ^/sentinel$ /sentinel/
+</IfModule>
+
 <IfModule mod_proxy.c>
     ProxyPreserveHost On
     ProxyPass /sentinel/api/ws/ ws://127.0.0.1:8443/api/ws/
     ProxyPassReverse /sentinel/api/ws/ ws://127.0.0.1:8443/api/ws/
 
-    ProxyPass /sentinel http://127.0.0.1:8443
-    ProxyPassReverse /sentinel http://127.0.0.1:8443
+    ProxyPass /sentinel/ http://127.0.0.1:8443/
+    ProxyPassReverse /sentinel/ http://127.0.0.1:8443/
+
+    ProxyPass /sentinel http://127.0.0.1:8443/
+    ProxyPassReverse /sentinel http://127.0.0.1:8443/
 </IfModule>
 EOF
 
