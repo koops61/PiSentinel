@@ -43,6 +43,10 @@ sudo nano /etc/nginx/sites-available/default
 
 ```nginx
     # --- PiSentinel Hub (Subpath /sentinel) ---
+    location = /sentinel {
+        return 301 /sentinel/;
+    }
+
     location /sentinel/ {
         proxy_pass http://127.0.0.1:8443/;
         proxy_http_version 1.1;

@@ -1,7 +1,7 @@
 import os
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, RedirectResponse
@@ -31,7 +31,6 @@ app = FastAPI(
     title="PiSentinel - Raspberry Pi Security Hub",
     description="All-in-One Real-Time Security Operations Center for Raspberry Pi",
     version="1.0.0",
-    root_path=settings.ROOT_PATH,
     lifespan=lifespan
 )
 
@@ -107,11 +106,15 @@ if os.path.exists(frontend_dist):
         if clean_path.startswith("sentinel/"):
             clean_path = clean_path[len("sentinel/"):]
         elif clean_path == "sentinel":
-            clean_path = ""
+            return RedirectResponse(url="/sentinel/", status_code=301)
 
         file_path = os.path.join(frontend_dist, clean_path)
         if clean_path and os.path.isfile(file_path):
             return FileResponse(file_path)
+
+        # Never return index.html for missing assets/ or API requests
+        if clean_path.startswith("assets/") or clean_path.startswith("api/"):
+            raise HTTPException(status_code=404, detail="Fichier introuvable")
 
         index_file = os.path.join(frontend_dist, "index.html")
         if os.path.exists(index_file):

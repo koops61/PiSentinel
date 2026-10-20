@@ -59,8 +59,11 @@ if systemctl is-active --quiet nginx 2>/dev/null || command -v nginx >/dev/null 
   echo "🔍 Nginx détecté sur le système !"
   mkdir -p /etc/nginx/snippets
 
-  cat << 'EOF' > /etc/nginx/snippets/pisentinel.conf
 # --- PiSentinel Reverse Proxy (Subpath /sentinel) ---
+location = /sentinel {
+    return 301 /sentinel/;
+}
+
 location /sentinel/ {
     proxy_pass http://127.0.0.1:8443/;
     proxy_http_version 1.1;
