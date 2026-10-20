@@ -17,6 +17,23 @@ class AuditService:
         self.scan_lock = threading.Lock()
         self.current_scan = None  # None or {"tool": "lynis|rkhunter", "status": "running|done|error", "started_at": ...}
 
+    def _read_file_lines(self, file_path: str) -> List[str]:
+        if not os.path.exists(file_path):
+            return []
+        try:
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                return f.readlines()
+        except PermissionError:
+            try:
+                res = subprocess.run(["sudo", "cat", file_path], stdout=subprocess.PIPE, text=True, timeout=5)
+                if res.returncode == 0:
+                    return res.stdout.splitlines()
+            except Exception as e:
+                logger.error(f"Fallback sudo cat failed for {file_path}: {e}")
+        except Exception as e:
+            logger.error(f"Error reading {file_path}: {e}")
+        return []
+
     def get_lynis_report(self) -> Dict[str, Any]:
         """
         Parses /var/log/lynis-report.dat and returns structured audit results.
@@ -55,9 +72,9 @@ class AuditService:
             suggestions = []
             warnings = []
 
-            with open(self.lynis_report_path, "r", encoding="utf-8", errors="ignore") as f:
-                for line in f:
-                    line = line.strip()
+            lines = self._read_file_lines(self.lynis_report_path)
+            for line in lines:
+                line = line.strip()
                     if line.startswith("hardening_index="):
                         val = line.split("=", 1)[1]
                         hardening_index = int(val) if val.isdigit() else 0
@@ -116,10 +133,10 @@ class AuditService:
             scan_date = datetime.fromtimestamp(mtime).strftime("%d/%m/%Y à %H:%M")
             warnings = []
 
-            with open(self.rkhunter_log_path, "r", encoding="utf-8", errors="ignore") as f:
-                for line in f:
-                    if "[Warning]" in line or "Warning:" in line:
-                        cleaned = line.strip()
+            lines = self._read_file_lines(self.rkhunter_log_path)
+            for line in lines:
+                if "[Warning]" in line or "Warning:" in line:
+                    cleaned = line.strip()
                         # Extract explanation for common Debian/RPi false positives
                         explanation = "Avertissement système détecté."
                         is_fp = False
