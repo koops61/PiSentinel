@@ -322,15 +322,49 @@ net.ipv4.conf.all.log_martians = 1
 """
         target_conf = "/etc/sysctl.d/99-pisentinel.conf"
         try:
-            # Write sysctl rules
-            with open("/tmp/99-pisentinel.conf", "w") as f:
-                f.write(conf_content)
+            # 1. Write sysctl config directly via sudo tee (avoids PrivateTmp=true namespace isolation)
+            tee_res = subprocess.run(
+                ["sudo", "tee", target_conf],
+                input=conf_content,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                timeout=5
+            )
+            if tee_res.returncode != 0:
+                err_msg = tee_res.stderr.strip() or "Permission refusée"
+                logger.error(f"Failed to write sysctl file: {err_msg}")
+                return {"success": False, "message": f"Échec d'écriture ({target_conf}): {err_msg}"}
 
-            subprocess.run(["sudo", "cp", "/tmp/99-pisentinel.conf", target_conf], check=True, timeout=5)
-            subprocess.run(["sudo", "sysctl", "--system"], check=True, timeout=10)
-            
-            # Secure /etc/shadow permissions if needed
-            subprocess.run(["sudo", "chmod", "640", "/etc/shadow"], timeout=5)
+            # 2. Apply live sysctl rules directly into the running Linux kernel
+            sysctl_settings = [
+                ("net.ipv4.tcp_syncookies", "1"),
+                ("net.ipv4.conf.all.rp_filter", "1"),
+                ("net.ipv4.conf.default.rp_filter", "1"),
+                ("net.ipv4.icmp_echo_ignore_broadcasts", "1"),
+                ("net.ipv4.conf.all.accept_redirects", "0"),
+                ("net.ipv4.conf.default.accept_redirects", "0"),
+                ("net.ipv4.conf.all.send_redirects", "0"),
+                ("net.ipv4.conf.default.send_redirects", "0"),
+                ("net.ipv4.conf.all.log_martians", "1"),
+            ]
+            for key, val in sysctl_settings:
+                try:
+                    subprocess.run(["sudo", "sysctl", "-w", f"{key}={val}"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=3)
+                except Exception as ex:
+                    logger.warning(f"Could not apply sysctl {key}={val}: {ex}")
+
+            # 3. Reload sysctl system-wide
+            try:
+                subprocess.run(["sudo", "sysctl", "--system"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=10)
+            except Exception:
+                pass
+
+            # 4. Secure /etc/shadow permissions
+            try:
+                subprocess.run(["sudo", "chmod", "640", "/etc/shadow"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=5)
+            except Exception:
+                pass
 
             return {
                 "success": True,

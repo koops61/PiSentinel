@@ -1142,6 +1142,24 @@ function renderToolsTab() {
         </div>
       </div>
     </div>
+
+    <!-- Modal Rapport d'Audit & Diagnostic Lynis / Rootkit Hunter -->
+    <dialog id="auditReportModal" class="soc-modal audit-modal">
+      <div class="modal-content audit-dialog-content">
+        <div class="modal-header">
+          <h3 class="modal-title" id="auditModalTitle">Rapport d'Audit de Sécurité</h3>
+          <button class="close-btn" id="closeAuditModalBtn">&times;</button>
+        </div>
+        <div id="auditModalBody" style="padding:0.5rem 0 1rem 0;">
+          <div style="color:var(--text-dim); font-family:var(--font-mono); text-align:center; padding:2rem 0;">
+            Sélectionnez un rapport pour charger les résultats...
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; margin-top:1rem; border-top:1px solid var(--panel-border); padding-top:1rem;">
+          <button type="button" class="btn btn-outline" id="closeAuditModalFooterBtn">Fermer</button>
+        </div>
+      </div>
+    </dialog>
   `;
 
   // Load and render hardening checks
@@ -1187,7 +1205,8 @@ function renderToolsTab() {
 
   // Attach Run Audit listeners
   document.querySelectorAll('.run-audit-btn').forEach(btn => {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', async (e) => {
+      e.preventDefault();
       const toolId = btn.dataset.tool;
       try {
         btn.disabled = true;
@@ -1209,11 +1228,23 @@ function renderToolsTab() {
 
   // Attach View Audit Report listeners
   document.querySelectorAll('.view-audit-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       const toolId = btn.dataset.tool;
       openAuditModal(toolId);
     });
   });
+
+  // Modal close buttons
+  const auditModal = document.getElementById('auditReportModal');
+  if (auditModal) {
+    document.getElementById('closeAuditModalBtn')?.addEventListener('click', () => auditModal.close());
+    document.getElementById('closeAuditModalFooterBtn')?.addEventListener('click', () => auditModal.close());
+    auditModal.addEventListener('click', (e) => {
+      if (e.target === auditModal) auditModal.close();
+    });
+  }
 
   // Attach Apply Hardening listener
   const applyBtn = document.getElementById('applyHardeningBtn');
@@ -1271,48 +1302,47 @@ async function loadHardeningChecks() {
 
 async function openAuditModal(toolId) {
   try { sounds.playClick?.(); } catch (_) {}
-  const existingModal = document.getElementById('auditReportModal');
-  if (existingModal) existingModal.remove();
-
-  const modal = document.createElement('dialog');
-  modal.id = 'auditReportModal';
-  modal.className = 'soc-modal audit-modal';
-
-  modal.innerHTML = `
-    <div class="modal-content audit-dialog-content">
-      <div class="modal-header">
-        <h3 class="modal-title">Chargement du rapport...</h3>
-        <button class="close-btn" id="closeAuditModalBtn">&times;</button>
-      </div>
-      <div id="auditModalBody" style="padding:1rem 0;">
-        <div style="color:var(--text-dim); font-family:var(--font-mono); text-align:center;">
-          Lecture des journaux système de ${toolId.toUpperCase()}...
+  let modal = document.getElementById('auditReportModal');
+  if (!modal) {
+    modal = document.createElement('dialog');
+    modal.id = 'auditReportModal';
+    modal.className = 'soc-modal audit-modal';
+    modal.innerHTML = `
+      <div class="modal-content audit-dialog-content">
+        <div class="modal-header">
+          <h3 class="modal-title" id="auditModalTitle">Rapport d'Audit</h3>
+          <button class="close-btn" id="closeAuditModalBtn">&times;</button>
+        </div>
+        <div id="auditModalBody" style="padding:1rem 0;"></div>
+        <div style="display:flex; justify-content:flex-end; margin-top:1rem; border-top:1px solid var(--panel-border); padding-top:1rem;">
+          <button type="button" class="btn btn-outline" id="closeAuditModalFooterBtn">Fermer</button>
         </div>
       </div>
-    </div>
-  `;
-  document.body.appendChild(modal);
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.close();
+    });
+    modal.querySelector('#closeAuditModalBtn')?.addEventListener('click', () => modal.close());
+    modal.querySelector('#closeAuditModalFooterBtn')?.addEventListener('click', () => modal.close());
+  }
 
-  // Close on backdrop click
-  modal.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.close();
-      modal.remove();
-    }
-  });
+  const title = modal.querySelector('#auditModalTitle') || modal.querySelector('.modal-title');
+  const body = document.getElementById('auditModalBody');
+
+  if (title) title.innerText = toolId === 'lynis' ? "🛡️ Rapport d'Audit Lynis" : "🔍 Rapport Rootkit Hunter";
+  if (body) {
+    body.innerHTML = `
+      <div style="color:var(--text-dim); font-family:var(--font-mono); text-align:center; padding:2rem 0;">
+        <span class="pulse-dot" style="margin-right:0.5rem;"></span> Lecture des journaux système de ${toolId.toUpperCase()}...
+      </div>
+    `;
+  }
 
   if (typeof modal.showModal === 'function') {
     modal.showModal();
   } else {
     modal.setAttribute('open', '');
-  }
-
-  const closeBtn = document.getElementById('closeAuditModalBtn');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', () => {
-      modal.close();
-      modal.remove();
-    });
   }
 
   try {

@@ -1,13 +1,13 @@
-(function(){const e=document.createElement("link").relList;if(e&&e.supports&&e.supports("modulepreload"))return;for(const i of document.querySelectorAll('link[rel="modulepreload"]'))s(i);new MutationObserver(i=>{for(const r of i)if(r.type==="childList")for(const o of r.addedNodes)o.tagName==="LINK"&&o.rel==="modulepreload"&&s(o)}).observe(document,{childList:!0,subtree:!0});function t(i){const r={};return i.integrity&&(r.integrity=i.integrity),i.referrerPolicy&&(r.referrerPolicy=i.referrerPolicy),i.crossOrigin==="use-credentials"?r.credentials="include":i.crossOrigin==="anonymous"?r.credentials="omit":r.credentials="same-origin",r}function s(i){if(i.ep)return;i.ep=!0;const r=t(i);fetch(i.href,r)}})();const B="pisentinel_token",f={getToken:()=>localStorage.getItem(B),setToken:n=>localStorage.setItem(B,n),removeToken:()=>localStorage.removeItem(B)},N=()=>(window.location.pathname||"").includes("/sentinel")?"/sentinel":"";async function p(n,e={}){const t=f.getToken(),s={"Content-Type":"application/json",...e.headers||{}};t&&(s.Authorization=`Bearer ${t}`);const i=N(),r=n.startsWith("http")?n:`${i}${n}`,o=await fetch(r,{...e,headers:s});if(o.status===401){f.removeToken(),window.dispatchEvent(new CustomEvent("pisentinel:unauthorized"));const g=await o.json().catch(()=>({detail:"Session expirée"}));throw new Error(g.detail||"Non autorisé")}if(!o.ok){const g=await o.json().catch(()=>({detail:`Erreur HTTP ${o.status}`}));throw new Error(g.detail||`Erreur serveur (${o.status})`)}return o.json()}const d={auth:{getConfig:()=>p("/api/auth/config"),loginGoogle:n=>p("/api/auth/google",{method:"POST",body:JSON.stringify({credential:n})}),loginLocal:(n,e)=>p("/api/auth/login",{method:"POST",body:JSON.stringify({username:n,password:e})}),getMe:()=>p("/api/auth/me"),logout:()=>p("/api/auth/logout",{method:"POST"})},system:{getStatus:()=>p("/api/system/status"),getSummary:()=>p("/api/system/summary")},ports:{getPorts:()=>p("/api/ports"),getHardeningRules:()=>p("/api/ports/hardening-rules")},tools:{getTools:()=>p("/api/tools"),control:(n,e)=>p(`/api/tools/${n}/control`,{method:"POST",body:JSON.stringify({action:e})}),install:n=>p(`/api/tools/${n}/install`,{method:"POST"})},attacks:{getAttacks:()=>p("/api/attacks"),trigger:(n,e)=>p("/api/attacks/trigger",{method:"POST",body:JSON.stringify({ip:n,service:e})}),getBanned:()=>p("/api/attacks/banned"),ban:(n,e)=>p("/api/attacks/ban",{method:"POST",body:JSON.stringify({ip:n,reason:e})}),unban:n=>p(`/api/attacks/ban/${encodeURIComponent(n)}`,{method:"DELETE"})},audit:{getReport:()=>p("/api/audit/report"),scan:n=>p(`/api/audit/scan/${n}`,{method:"POST"}),getOptimizations:()=>p("/api/audit/optimizations"),optimize:()=>p("/api/audit/optimize",{method:"POST"})}};class Q{constructor(){this.ctx=null,this.enabled=localStorage.getItem("pisentinel_sound")==="true"}init(){if(!this.ctx&&typeof window<"u"){const e=window.AudioContext||window.webkitAudioContext;e&&(this.ctx=new e)}}toggle(){return this.enabled=!this.enabled,localStorage.setItem("pisentinel_sound",this.enabled?"true":"false"),this.enabled&&this.playBeep(880,.08,"sine"),this.enabled}playBeep(e=440,t=.1,s="sine",i=.05){if(this.enabled)try{if(this.init(),this.ctx&&this.ctx.state==="suspended"&&this.ctx.resume(),!this.ctx)return;const r=this.ctx.createOscillator(),o=this.ctx.createGain();r.type=s,r.frequency.setValueAtTime(e,this.ctx.currentTime),o.gain.setValueAtTime(i,this.ctx.currentTime),o.gain.exponentialRampToValueAtTime(1e-4,this.ctx.currentTime+t),r.connect(o),o.connect(this.ctx.destination),r.start(),r.stop(this.ctx.currentTime+t)}catch{}}playAttackAlert(){this.enabled&&(this.playBeep(880,.12,"triangle",.08),setTimeout(()=>{this.playBeep(1174,.18,"triangle",.06)},120))}playBan(){this.enabled&&(this.playBeep(320,.15,"sawtooth",.08),setTimeout(()=>{this.playBeep(180,.25,"sawtooth",.08)},100))}playSuccess(){this.enabled&&(this.playBeep(523.25,.08,"sine",.05),setTimeout(()=>{this.playBeep(659.25,.12,"sine",.05)},90))}playClick(){this.enabled&&this.playBeep(700,.03,"sine",.03)}playAlert(){this.enabled&&this.playBeep(440,.1,"triangle",.06)}}const v=new Q,a={user:null,authConfig:null,activeTab:"radar",telemetry:null,summary:null,ports:[],portScore:100,riskBreakdown:{},tools:[],attacks:[],bannedIps:[],wsConnected:!1,soundEnabled:v.enabled,ws:null},k=()=>document.getElementById("app")||document.body;function l(n,e="info"){let t=document.querySelector(".toast-container");t||(t=document.createElement("div"),t.className="toast-container",document.body.appendChild(t));const s=document.createElement("div");s.className=`toast ${e}`,s.innerHTML=`
+(function(){const e=document.createElement("link").relList;if(e&&e.supports&&e.supports("modulepreload"))return;for(const r of document.querySelectorAll('link[rel="modulepreload"]'))i(r);new MutationObserver(r=>{for(const a of r)if(a.type==="childList")for(const l of a.addedNodes)l.tagName==="LINK"&&l.rel==="modulepreload"&&i(l)}).observe(document,{childList:!0,subtree:!0});function s(r){const a={};return r.integrity&&(a.integrity=r.integrity),r.referrerPolicy&&(a.referrerPolicy=r.referrerPolicy),r.crossOrigin==="use-credentials"?a.credentials="include":r.crossOrigin==="anonymous"?a.credentials="omit":a.credentials="same-origin",a}function i(r){if(r.ep)return;r.ep=!0;const a=s(r);fetch(r.href,a)}})();const B="pisentinel_token",f={getToken:()=>localStorage.getItem(B),setToken:n=>localStorage.setItem(B,n),removeToken:()=>localStorage.removeItem(B)},F=()=>(window.location.pathname||"").includes("/sentinel")?"/sentinel":"";async function p(n,e={}){const s=f.getToken(),i={"Content-Type":"application/json",...e.headers||{}};s&&(i.Authorization=`Bearer ${s}`);const r=F(),a=n.startsWith("http")?n:`${r}${n}`,l=await fetch(a,{...e,headers:i});if(l.status===401){f.removeToken(),window.dispatchEvent(new CustomEvent("pisentinel:unauthorized"));const d=await l.json().catch(()=>({detail:"Session expirée"}));throw new Error(d.detail||"Non autorisé")}if(!l.ok){const d=await l.json().catch(()=>({detail:`Erreur HTTP ${l.status}`}));throw new Error(d.detail||`Erreur serveur (${l.status})`)}return l.json()}const m={auth:{getConfig:()=>p("/api/auth/config"),loginGoogle:n=>p("/api/auth/google",{method:"POST",body:JSON.stringify({credential:n})}),loginLocal:(n,e)=>p("/api/auth/login",{method:"POST",body:JSON.stringify({username:n,password:e})}),getMe:()=>p("/api/auth/me"),logout:()=>p("/api/auth/logout",{method:"POST"})},system:{getStatus:()=>p("/api/system/status"),getSummary:()=>p("/api/system/summary")},ports:{getPorts:()=>p("/api/ports"),getHardeningRules:()=>p("/api/ports/hardening-rules")},tools:{getTools:()=>p("/api/tools"),control:(n,e)=>p(`/api/tools/${n}/control`,{method:"POST",body:JSON.stringify({action:e})}),install:n=>p(`/api/tools/${n}/install`,{method:"POST"})},attacks:{getAttacks:()=>p("/api/attacks"),trigger:(n,e)=>p("/api/attacks/trigger",{method:"POST",body:JSON.stringify({ip:n,service:e})}),getBanned:()=>p("/api/attacks/banned"),ban:(n,e)=>p("/api/attacks/ban",{method:"POST",body:JSON.stringify({ip:n,reason:e})}),unban:n=>p(`/api/attacks/ban/${encodeURIComponent(n)}`,{method:"DELETE"})},audit:{getReport:()=>p("/api/audit/report"),scan:n=>p(`/api/audit/scan/${n}`,{method:"POST"}),getOptimizations:()=>p("/api/audit/optimizations"),optimize:()=>p("/api/audit/optimize",{method:"POST"})}};class Q{constructor(){this.ctx=null,this.enabled=localStorage.getItem("pisentinel_sound")==="true"}init(){if(!this.ctx&&typeof window<"u"){const e=window.AudioContext||window.webkitAudioContext;e&&(this.ctx=new e)}}toggle(){return this.enabled=!this.enabled,localStorage.setItem("pisentinel_sound",this.enabled?"true":"false"),this.enabled&&this.playBeep(880,.08,"sine"),this.enabled}playBeep(e=440,s=.1,i="sine",r=.05){if(this.enabled)try{if(this.init(),this.ctx&&this.ctx.state==="suspended"&&this.ctx.resume(),!this.ctx)return;const a=this.ctx.createOscillator(),l=this.ctx.createGain();a.type=i,a.frequency.setValueAtTime(e,this.ctx.currentTime),l.gain.setValueAtTime(r,this.ctx.currentTime),l.gain.exponentialRampToValueAtTime(1e-4,this.ctx.currentTime+s),a.connect(l),l.connect(this.ctx.destination),a.start(),a.stop(this.ctx.currentTime+s)}catch{}}playAttackAlert(){this.enabled&&(this.playBeep(880,.12,"triangle",.08),setTimeout(()=>{this.playBeep(1174,.18,"triangle",.06)},120))}playBan(){this.enabled&&(this.playBeep(320,.15,"sawtooth",.08),setTimeout(()=>{this.playBeep(180,.25,"sawtooth",.08)},100))}playSuccess(){this.enabled&&(this.playBeep(523.25,.08,"sine",.05),setTimeout(()=>{this.playBeep(659.25,.12,"sine",.05)},90))}playClick(){this.enabled&&this.playBeep(700,.03,"sine",.03)}playAlert(){this.enabled&&this.playBeep(440,.1,"triangle",.06)}}const v=new Q,t={user:null,authConfig:null,activeTab:"radar",telemetry:null,summary:null,ports:[],portScore:100,riskBreakdown:{},tools:[],attacks:[],bannedIps:[],wsConnected:!1,soundEnabled:v.enabled,ws:null},k=()=>document.getElementById("app")||document.body;function c(n,e="info"){let s=document.querySelector(".toast-container");s||(s=document.createElement("div"),s.className="toast-container",document.body.appendChild(s));const i=document.createElement("div");i.className=`toast ${e}`,i.innerHTML=`
     <span class="pulse-dot ${e==="error"?"danger":e==="success"?"":"warning"}"></span>
     <span>${n}</span>
-  `,t.appendChild(s),setTimeout(()=>{s.style.opacity="0",s.style.transform="translateX(40px)",s.style.transition="all 0.3s ease",setTimeout(()=>s.remove(),300)},4e3)}function F(n){try{return new Date(n).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}catch{return"Récemment"}}function U(n){if(!n||n.length!==2)return"🌐";const e=n.toUpperCase().split("").map(t=>127397+t.charCodeAt(0));return String.fromCodePoint(...e)}async function O(){try{J();try{a.authConfig=await d.auth.getConfig()}catch(e){console.warn("Failed to load auth config:",e)}if(f.getToken())try{const e=await d.auth.getMe();a.user=e.user,await C(),$(),A();return}catch{f.removeToken()}I()}catch(n){console.error("Fatal init error:",n);const e=k();e&&(e.innerHTML=`
+  `,s.appendChild(i),setTimeout(()=>{i.style.opacity="0",i.style.transform="translateX(40px)",i.style.transition="all 0.3s ease",setTimeout(()=>i.remove(),300)},4e3)}function N(n){try{return new Date(n).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}catch{return"Récemment"}}function U(n){if(!n||n.length!==2)return"🌐";const e=n.toUpperCase().split("").map(s=>127397+s.charCodeAt(0));return String.fromCodePoint(...e)}async function D(){try{J();try{t.authConfig=await m.auth.getConfig()}catch(e){console.warn("Failed to load auth config:",e)}if(f.getToken())try{const e=await m.auth.getMe();t.user=e.user,await C(),$(),M();return}catch{f.removeToken()}I()}catch(n){console.error("Fatal init error:",n);const e=k();e&&(e.innerHTML=`
         <div style="padding:2rem; color:#ff3366; font-family:monospace; background:#060913; min-height:100vh;">
           <h2>Erreur d'initialisation PiSentinel</h2>
           <p>${n.message}</p>
           <button onclick="location.reload()" style="margin-top:1rem; padding:0.5rem 1rem; background:#00f2fe; color:#000; border:none; border-radius:4px; cursor:pointer;">Recharger la page</button>
         </div>
-      `)}}window.addEventListener("pisentinel:unauthorized",()=>{a.user=null,a.ws&&(a.ws.close(),a.ws=null),I()});async function C(){try{const[n,e,t,s,i]=await Promise.all([d.system.getSummary().catch(()=>null),d.ports.getPorts().catch(()=>({ports:[],score:100,risk_breakdown:{}})),d.tools.getTools().catch(()=>[]),d.attacks.getAttacks().catch(()=>({recent_attacks:[]})),d.attacks.getBanned().catch(()=>({banned:[]}))]);a.summary=n,a.ports=e.ports||[],a.portScore=e.score||100,a.riskBreakdown=e.risk_breakdown||{},a.tools=t||[],a.attacks=s.recent_attacks||[],a.bannedIps=i.banned||[]}catch(n){console.error("Error loading initial data:",n)}}function $(){const n=f.getToken();if(!n)return;const e=window.location.protocol==="https:"?"wss:":"ws:",t=N(),s=`${e}//${window.location.host}${t}/api/ws/telemetry?token=${encodeURIComponent(n)}`;a.ws=new WebSocket(s),a.ws.onopen=()=>{a.wsConnected=!0,D()},a.ws.onmessage=i=>{try{const r=JSON.parse(i.data);r.type==="telemetry"?(a.telemetry=r.data,K()):r.type==="attack_event"&&W(r.data)}catch(r){console.error("WS parse error:",r)}},a.ws.onclose=()=>{a.wsConnected=!1,D(),a.user&&setTimeout($,4e3)}}function W(n){var e;a.attacks.unshift(n),a.attacks.length>50&&a.attacks.pop(),v.playAttackAlert(),l(`Alerte Attaque: ${n.type} depuis ${n.ip} (${((e=n.geo)==null?void 0:e.country)||"Inconnu"})`,"error"),a.activeTab==="radar"&&(S(),E())}function J(){const n=k();n&&(n.innerHTML=`
+      `)}}window.addEventListener("pisentinel:unauthorized",()=>{t.user=null,t.ws&&(t.ws.close(),t.ws=null),I()});async function C(){try{const[n,e,s,i,r]=await Promise.all([m.system.getSummary().catch(()=>null),m.ports.getPorts().catch(()=>({ports:[],score:100,risk_breakdown:{}})),m.tools.getTools().catch(()=>[]),m.attacks.getAttacks().catch(()=>({recent_attacks:[]})),m.attacks.getBanned().catch(()=>({banned:[]}))]);t.summary=n,t.ports=e.ports||[],t.portScore=e.score||100,t.riskBreakdown=e.risk_breakdown||{},t.tools=s||[],t.attacks=i.recent_attacks||[],t.bannedIps=r.banned||[]}catch(n){console.error("Error loading initial data:",n)}}function $(){const n=f.getToken();if(!n)return;const e=window.location.protocol==="https:"?"wss:":"ws:",s=F(),i=`${e}//${window.location.host}${s}/api/ws/telemetry?token=${encodeURIComponent(n)}`;t.ws=new WebSocket(i),t.ws.onopen=()=>{t.wsConnected=!0,O()},t.ws.onmessage=r=>{try{const a=JSON.parse(r.data);a.type==="telemetry"?(t.telemetry=a.data,K()):a.type==="attack_event"&&W(a.data)}catch(a){console.error("WS parse error:",a)}},t.ws.onclose=()=>{t.wsConnected=!1,O(),t.user&&setTimeout($,4e3)}}function W(n){var e;t.attacks.unshift(n),t.attacks.length>50&&t.attacks.pop(),v.playAttackAlert(),c(`Alerte Attaque: ${n.type} depuis ${n.ip} (${((e=n.geo)==null?void 0:e.country)||"Inconnu"})`,"error"),t.activeTab==="radar"&&(S(),E())}function J(){const n=k();n&&(n.innerHTML=`
     <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; gap:1.5rem;">
       <div class="brand-logo" style="width:64px; height:64px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -18,7 +18,7 @@
         Initialisation de PiSentinel...
       </div>
     </div>
-  `)}function I(){var e,t,s,i,r;const n=k();n&&(n.innerHTML=`
+  `)}function I(){var e,s,i,r,a;const n=k();n&&(n.innerHTML=`
     <div style="display:flex; align-items:center; justify-content:center; min-height:100vh; padding:1.5rem;">
       <div class="modal-content" style="max-width:480px; width:100%;">
         <div style="text-align:center; margin-bottom:1.75rem;">
@@ -35,12 +35,12 @@
           </p>
         </div>
 
-        ${(e=a.authConfig)!=null&&e.google_enabled?`
+        ${(e=t.authConfig)!=null&&e.google_enabled?`
           <div style="margin-bottom:1.25rem;">
             <div id="googleBtn" style="display:flex; justify-content:center;"></div>
-            ${(t=a.authConfig)!=null&&t.whitelist_enabled?`
+            ${(s=t.authConfig)!=null&&s.whitelist_enabled?`
               <p style="font-size:0.75rem; color:var(--emerald); text-align:center; margin-top:0.6rem; font-family:var(--font-mono);">
-                🛡️ Accès restreint par liste blanche Google (${a.authConfig.allowed_email_count} comptes autorisés)
+                🛡️ Accès restreint par liste blanche Google (${t.authConfig.allowed_email_count} comptes autorisés)
               </p>
             `:""}
           </div>
@@ -70,7 +70,7 @@
         </form>
       </div>
     </div>
-  `,(s=a.authConfig)!=null&&s.google_enabled&&((r=(i=window.google)==null?void 0:i.accounts)!=null&&r.id)&&(window.google.accounts.id.initialize({client_id:a.authConfig.google_client_id,callback:Z}),window.google.accounts.id.renderButton(document.getElementById("googleBtn"),{theme:"filled_black",size:"large",text:"signin_with",shape:"pill",width:280})),document.getElementById("localLoginForm").addEventListener("submit",async o=>{o.preventDefault();const g=document.getElementById("loginUsername").value,c=document.getElementById("loginPassword").value;try{const u=await d.auth.loginLocal(g,c);f.setToken(u.access_token),a.user=u.user,v.playSuccess(),l("Authentification réussie !","success"),await C(),$(),A()}catch(u){v.playBan(),l(u.message,"error")}}))}async function Z(n){try{const e=await d.auth.loginGoogle(n.credential);f.setToken(e.access_token),a.user=e.user,v.playSuccess(),l(`Bienvenue, ${e.user.name} !`,"success"),await C(),$(),A()}catch(e){v.playBan(),l(e.message,"error")}}function A(){var e,t,s,i,r,o,g,c,u;const n=k();n&&(n.innerHTML=`
+  `,(i=t.authConfig)!=null&&i.google_enabled&&((a=(r=window.google)==null?void 0:r.accounts)!=null&&a.id)&&(window.google.accounts.id.initialize({client_id:t.authConfig.google_client_id,callback:Z}),window.google.accounts.id.renderButton(document.getElementById("googleBtn"),{theme:"filled_black",size:"large",text:"signin_with",shape:"pill",width:280})),document.getElementById("localLoginForm").addEventListener("submit",async l=>{l.preventDefault();const d=document.getElementById("loginUsername").value,u=document.getElementById("loginPassword").value;try{const y=await m.auth.loginLocal(d,u);f.setToken(y.access_token),t.user=y.user,v.playSuccess(),c("Authentification réussie !","success"),await C(),$(),M()}catch(y){v.playBan(),c(y.message,"error")}}))}async function Z(n){try{const e=await m.auth.loginGoogle(n.credential);f.setToken(e.access_token),t.user=e.user,v.playSuccess(),c(`Bienvenue, ${e.user.name} !`,"success"),await C(),$(),M()}catch(e){v.playBan(),c(e.message,"error")}}function M(){var e,s,i,r,a,l,d,u,y;const n=k();n&&(n.innerHTML=`
     <!-- Top Command Header -->
     <header class="soc-header">
       <div class="brand-section">
@@ -81,28 +81,28 @@
         </div>
         <div class="brand-text">
           <h1>PiSentinel <span class="brand-badge">v1.0.0</span></h1>
-          <div class="brand-sub">${((e=a.telemetry)==null?void 0:e.model)||"Raspberry Pi"} &bull; ${((t=a.telemetry)==null?void 0:t.hostname)||"raspberrypi"}</div>
+          <div class="brand-sub">${((e=t.telemetry)==null?void 0:e.model)||"Raspberry Pi"} &bull; ${((s=t.telemetry)==null?void 0:s.hostname)||"raspberrypi"}</div>
         </div>
       </div>
 
       <div class="header-telemetry">
         <div class="telemetry-pill" id="socPill">
-          <span class="pulse-dot ${a.wsConnected?"":"danger"}"></span>
-          <span>${a.wsConnected?"SURVEILLANCE ACTIVE":"DÉCONNECTÉ"}</span>
+          <span class="pulse-dot ${t.wsConnected?"":"danger"}"></span>
+          <span>${t.wsConnected?"SURVEILLANCE ACTIVE":"DÉCONNECTÉ"}</span>
         </div>
         <div class="telemetry-pill">
           <span style="color:var(--cyan-neon);">TEMP</span>
-          <span id="headerTemp">${((i=(s=a.telemetry)==null?void 0:s.cpu)==null?void 0:i.temperature_c)||42}&deg;C</span>
+          <span id="headerTemp">${((r=(i=t.telemetry)==null?void 0:i.cpu)==null?void 0:r.temperature_c)||42}&deg;C</span>
         </div>
         <div class="telemetry-pill">
           <span style="color:var(--emerald);">SCORE SÉCURITÉ</span>
-          <span id="headerScore" style="font-weight:700;">${((r=a.summary)==null?void 0:r.overall_security_score)||90}%</span>
+          <span id="headerScore" style="font-weight:700;">${((a=t.summary)==null?void 0:a.overall_security_score)||90}%</span>
         </div>
       </div>
 
       <div class="header-actions">
         <!-- Sound Toggle -->
-        <button id="soundToggleBtn" class="btn btn-icon ${a.soundEnabled?"active":""}" title="Sons d'alerte tactiques">
+        <button id="soundToggleBtn" class="btn btn-icon ${t.soundEnabled?"active":""}" title="Sons d'alerte tactiques">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
             <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
@@ -111,12 +111,12 @@
 
         <!-- User Profile Badge & Logout -->
         <div class="user-badge">
-          ${(o=a.user)!=null&&o.picture?`
-            <img src="${a.user.picture}" class="user-avatar" alt="Avatar" />
+          ${(l=t.user)!=null&&l.picture?`
+            <img src="${t.user.picture}" class="user-avatar" alt="Avatar" />
           `:`
-            <div class="user-avatar-placeholder">${(g=a.user)!=null&&g.name?a.user.name[0]:"A"}</div>
+            <div class="user-avatar-placeholder">${(d=t.user)!=null&&d.name?t.user.name[0]:"A"}</div>
           `}
-          <span style="font-weight:600;">${((c=a.user)==null?void 0:c.name)||"Admin"}</span>
+          <span style="font-weight:600;">${((u=t.user)==null?void 0:u.name)||"Admin"}</span>
           <button id="logoutBtn" class="btn btn-outline" style="padding:0.25rem 0.55rem; font-size:0.75rem; margin-left:0.3rem;">
             Sortir
           </button>
@@ -127,16 +127,16 @@
     <!-- Navigation Tabs Bar -->
     <nav class="tabs-nav-bar">
       <div class="tabs-list">
-        <button class="tab-btn ${a.activeTab==="radar"?"active":""}" data-tab="radar">
+        <button class="tab-btn ${t.activeTab==="radar"?"active":""}" data-tab="radar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"></circle>
             <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
           </svg>
           Attaques & Radar Temps Réel
-          <span class="tab-badge" id="tabAttackCount">${a.attacks.length}</span>
+          <span class="tab-badge" id="tabAttackCount">${t.attacks.length}</span>
         </button>
 
-        <button class="tab-btn ${a.activeTab==="ports"?"active":""}" data-tab="ports">
+        <button class="tab-btn ${t.activeTab==="ports"?"active":""}" data-tab="ports">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
             <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
@@ -145,21 +145,21 @@
           </svg>
           Audit des Ports Ouverts
           <span class="tab-badge" style="background:rgba(0,242,254,0.15); color:var(--cyan-neon); border-color:var(--cyan-neon);">
-            ${a.ports.length}
+            ${t.ports.length}
           </span>
         </button>
 
-        <button class="tab-btn ${a.activeTab==="tools"?"active":""}" data-tab="tools">
+        <button class="tab-btn ${t.activeTab==="tools"?"active":""}" data-tab="tools">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
           </svg>
           Outils de Sécurité RPi
           <span class="tab-badge" style="background:rgba(0,245,160,0.15); color:var(--emerald); border-color:var(--emerald);">
-            ${a.tools.filter(m=>m.status==="active").length}/${a.tools.length}
+            ${t.tools.filter(o=>o.status==="active").length}/${t.tools.length}
           </span>
         </button>
 
-        <button class="tab-btn ${a.activeTab==="system"?"active":""}" data-tab="system">
+        <button class="tab-btn ${t.activeTab==="system"?"active":""}" data-tab="system">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
             <rect x="9" y="9" width="6" height="6"></rect>
@@ -193,7 +193,7 @@
         <div class="stat-card cyan">
           <div class="stat-info">
             <div class="stat-label">Score de Sécurité</div>
-            <div class="stat-value" id="cardSecurityScore">${((u=a.summary)==null?void 0:u.overall_security_score)||90}%</div>
+            <div class="stat-value" id="cardSecurityScore">${((y=t.summary)==null?void 0:y.overall_security_score)||90}%</div>
             <div class="stat-desc">Indice global de durcissement</div>
           </div>
           <div class="stat-icon">
@@ -203,12 +203,12 @@
           </div>
         </div>
 
-        <div class="stat-card ${a.ports.filter(m=>m.risk==="critical"||m.risk==="high").length>0?"amber":"green"}">
+        <div class="stat-card ${t.ports.filter(o=>o.risk==="critical"||o.risk==="high").length>0?"amber":"green"}">
           <div class="stat-info">
             <div class="stat-label">Ports en Écoute</div>
-            <div class="stat-value" id="cardOpenPorts">${a.ports.length}</div>
+            <div class="stat-value" id="cardOpenPorts">${t.ports.length}</div>
             <div class="stat-desc">
-              ${a.ports.filter(m=>m.risk==="critical").length} critique(s), ${a.ports.filter(m=>m.risk==="high").length} exposé(s)
+              ${t.ports.filter(o=>o.risk==="critical").length} critique(s), ${t.ports.filter(o=>o.risk==="high").length} exposé(s)
             </div>
           </div>
           <div class="stat-icon">
@@ -222,7 +222,7 @@
         <div class="stat-card red">
           <div class="stat-info">
             <div class="stat-label">Tentatives d'Intrusion</div>
-            <div class="stat-value" id="cardAttacks">${a.attacks.length}</div>
+            <div class="stat-value" id="cardAttacks">${t.attacks.length}</div>
             <div class="stat-desc">Détectées en temps réel</div>
           </div>
           <div class="stat-icon">
@@ -235,7 +235,7 @@
         <div class="stat-card green">
           <div class="stat-info">
             <div class="stat-label">Outils de Défense</div>
-            <div class="stat-value" id="cardTools">${a.tools.filter(m=>m.status==="active").length} / ${a.tools.length}</div>
+            <div class="stat-value" id="cardTools">${t.tools.filter(o=>o.status==="active").length} / ${t.tools.length}</div>
             <div class="stat-desc">Services de sécurité actifs</div>
           </div>
           <div class="stat-icon">
@@ -294,10 +294,10 @@
         </div>
       </div>
     </dialog>
-  `,document.querySelectorAll(".tab-btn").forEach(m=>{m.addEventListener("click",()=>{document.querySelectorAll(".tab-btn").forEach(y=>y.classList.remove("active")),m.classList.add("active"),a.activeTab=m.dataset.tab,H()})}),document.getElementById("soundToggleBtn").addEventListener("click",()=>{a.soundEnabled=v.toggle(),document.getElementById("soundToggleBtn").classList.toggle("active",a.soundEnabled),l(a.soundEnabled?"Sons tactiques activés":"Sons désactivés","info")}),document.getElementById("logoutBtn").addEventListener("click",async()=>{await d.auth.logout(),f.removeToken(),a.user=null,a.ws&&a.ws.close(),l("Déconnexion effectuée.","info"),I()}),document.getElementById("quickSimulateBtn").addEventListener("click",async()=>{var m;try{const y=await d.attacks.trigger();l(`Attaque simulée injectée depuis ${(m=y.event)==null?void 0:m.ip}`,"info")}catch(y){l(y.message,"error")}}),document.getElementById("quickBanModalBtn").addEventListener("click",()=>{document.getElementById("banIpInput").value="",document.getElementById("banModal").showModal()}),document.getElementById("banForm").addEventListener("submit",async m=>{m.preventDefault();const y=document.getElementById("banIpInput").value,h=document.getElementById("banReasonInput").value;try{const b=await d.attacks.ban(y,h);v.playBan(),l(b.message,"success"),document.getElementById("banModal").close();const x=await d.attacks.getBanned();a.bannedIps=x.banned||[],a.activeTab==="radar"&&T()}catch(b){l(b.message,"error")}}),document.getElementById("copyRulesBtn").addEventListener("click",()=>{const m=document.getElementById("rulesCode").innerText;navigator.clipboard.writeText(m),l("Règles UFW copiées dans le presse-papier !","success")}),H())}function D(){const n=document.getElementById("socPill");n&&(n.innerHTML=`
-      <span class="pulse-dot ${a.wsConnected?"":"danger"}"></span>
-      <span>${a.wsConnected?"SURVEILLANCE ACTIVE":"DÉCONNECTÉ"}</span>
-    `)}function K(){var e;if(!a.telemetry)return;const n=document.getElementById("headerTemp");n&&(n.innerText=`${((e=a.telemetry.cpu)==null?void 0:e.temperature_c)||42}°C`),a.activeTab==="system"&&G()}function H(){a.activeTab==="radar"?T():a.activeTab==="ports"?V():a.activeTab==="tools"?w():a.activeTab==="system"&&G()}function T(){const n=document.getElementById("tabContent");n.innerHTML=`
+  `,document.querySelectorAll(".tab-btn").forEach(o=>{o.addEventListener("click",()=>{document.querySelectorAll(".tab-btn").forEach(g=>g.classList.remove("active")),o.classList.add("active"),t.activeTab=o.dataset.tab,H()})}),document.getElementById("soundToggleBtn").addEventListener("click",()=>{t.soundEnabled=v.toggle(),document.getElementById("soundToggleBtn").classList.toggle("active",t.soundEnabled),c(t.soundEnabled?"Sons tactiques activés":"Sons désactivés","info")}),document.getElementById("logoutBtn").addEventListener("click",async()=>{await m.auth.logout(),f.removeToken(),t.user=null,t.ws&&t.ws.close(),c("Déconnexion effectuée.","info"),I()}),document.getElementById("quickSimulateBtn").addEventListener("click",async()=>{var o;try{const g=await m.attacks.trigger();c(`Attaque simulée injectée depuis ${(o=g.event)==null?void 0:o.ip}`,"info")}catch(g){c(g.message,"error")}}),document.getElementById("quickBanModalBtn").addEventListener("click",()=>{document.getElementById("banIpInput").value="",document.getElementById("banModal").showModal()}),document.getElementById("banForm").addEventListener("submit",async o=>{o.preventDefault();const g=document.getElementById("banIpInput").value,h=document.getElementById("banReasonInput").value;try{const b=await m.attacks.ban(g,h);v.playBan(),c(b.message,"success"),document.getElementById("banModal").close();const x=await m.attacks.getBanned();t.bannedIps=x.banned||[],t.activeTab==="radar"&&T()}catch(b){c(b.message,"error")}}),document.getElementById("copyRulesBtn").addEventListener("click",()=>{const o=document.getElementById("rulesCode").innerText;navigator.clipboard.writeText(o),c("Règles UFW copiées dans le presse-papier !","success")}),H())}function O(){const n=document.getElementById("socPill");n&&(n.innerHTML=`
+      <span class="pulse-dot ${t.wsConnected?"":"danger"}"></span>
+      <span>${t.wsConnected?"SURVEILLANCE ACTIVE":"DÉCONNECTÉ"}</span>
+    `)}function K(){var e;if(!t.telemetry)return;const n=document.getElementById("headerTemp");n&&(n.innerText=`${((e=t.telemetry.cpu)==null?void 0:e.temperature_c)||42}°C`),t.activeTab==="system"&&G()}function H(){t.activeTab==="radar"?T():t.activeTab==="ports"?V():t.activeTab==="tools"?w():t.activeTab==="system"&&G()}function T(){const n=document.getElementById("tabContent");n.innerHTML=`
     <div class="grid-soc">
       <!-- Left Column: Radar Threat Visualizer -->
       <div class="panel" style="grid-column: span 7;">
@@ -378,11 +378,11 @@
             Adresses IP Bloquées (Pare-feu UFW / Fail2ban)
           </div>
           <span class="brand-badge" style="background:rgba(255,51,102,0.15); color:var(--crimson); border-color:var(--crimson);">
-            ${a.bannedIps.length} IP(s) Bannies
+            ${t.bannedIps.length} IP(s) Bannies
           </span>
         </div>
         <div class="panel-body">
-          ${a.bannedIps.length===0?`
+          ${t.bannedIps.length===0?`
             <div style="text-align:center; padding:2rem; color:var(--text-dim); font-size:0.9rem;">
               Aucune adresse IP actuellement bloquée. Cliquez sur "Bloquer IP" sur une attaque pour ajouter une règle au pare-feu.
             </div>
@@ -399,15 +399,15 @@
                   </tr>
                 </thead>
                 <tbody>
-                  ${a.bannedIps.map(e=>{var t,s,i;return`
+                  ${t.bannedIps.map(e=>{var s,i,r;return`
                     <tr>
                       <td class="port-num" style="color:var(--crimson);">${e.ip}</td>
                       <td>
-                        <span style="font-size:1.1rem; margin-right:0.4rem;">${U((t=e.geo)==null?void 0:t.country_code)}</span>
-                        ${((s=e.geo)==null?void 0:s.country)||"Inconnu"} (${((i=e.geo)==null?void 0:i.city)||"N/A"})
+                        <span style="font-size:1.1rem; margin-right:0.4rem;">${U((s=e.geo)==null?void 0:s.country_code)}</span>
+                        ${((i=e.geo)==null?void 0:i.country)||"Inconnu"} (${((r=e.geo)==null?void 0:r.city)||"N/A"})
                       </td>
                       <td style="color:var(--text-muted);">${e.reason}</td>
-                      <td style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">${F(e.timestamp)}</td>
+                      <td style="font-family:var(--font-mono); font-size:0.8rem; color:var(--text-dim);">${N(e.timestamp)}</td>
                       <td style="text-align:right;">
                         <button class="btn btn-outline unban-btn" data-ip="${e.ip}" style="padding:0.35rem 0.75rem; font-size:0.75rem;">
                           Débloquer
@@ -422,17 +422,17 @@
         </div>
       </div>
     </div>
-  `,S(),E(),document.getElementById("refreshAttacksBtn").addEventListener("click",async()=>{const e=await d.attacks.getAttacks();a.attacks=e.recent_attacks||[],E(),S(),l("Journal des attaques rafraîchi.","info")}),document.querySelectorAll(".unban-btn").forEach(e=>{e.addEventListener("click",async()=>{const t=e.dataset.ip;try{const s=await d.attacks.unban(t);v.playSuccess(),l(s.message,"success");const i=await d.attacks.getBanned();a.bannedIps=i.banned||[],T()}catch(s){l(s.message,"error")}})})}function S(){const n=document.getElementById("radarThreats");if(!n)return;const e=a.attacks.slice(0,12).map((t,s)=>{var c,u,m;const i=((c=t.geo)==null?void 0:c.lat)||Math.random()*80-40,r=((u=t.geo)==null?void 0:u.lon)||Math.random()*320-160,o=Math.max(10,Math.min(90,(r+180)/360*80+10));return`
-      <div class="threat-marker" style="top:${Math.max(15,Math.min(85,(90-i)/180*70+15))}%; left:${o}%;" title="${t.ip} (${((m=t.geo)==null?void 0:m.country)||"Inconnu"}) - ${t.type}"></div>
-    `}).join("");n.innerHTML=e}function E(){const n=document.getElementById("attackFeedList");if(n){if(a.attacks.length===0){n.innerHTML=`
+  `,S(),E(),document.getElementById("refreshAttacksBtn").addEventListener("click",async()=>{const e=await m.attacks.getAttacks();t.attacks=e.recent_attacks||[],E(),S(),c("Journal des attaques rafraîchi.","info")}),document.querySelectorAll(".unban-btn").forEach(e=>{e.addEventListener("click",async()=>{const s=e.dataset.ip;try{const i=await m.attacks.unban(s);v.playSuccess(),c(i.message,"success");const r=await m.attacks.getBanned();t.bannedIps=r.banned||[],T()}catch(i){c(i.message,"error")}})})}function S(){const n=document.getElementById("radarThreats");if(!n)return;const e=t.attacks.slice(0,12).map((s,i)=>{var u,y,o;const r=((u=s.geo)==null?void 0:u.lat)||Math.random()*80-40,a=((y=s.geo)==null?void 0:y.lon)||Math.random()*320-160,l=Math.max(10,Math.min(90,(a+180)/360*80+10));return`
+      <div class="threat-marker" style="top:${Math.max(15,Math.min(85,(90-r)/180*70+15))}%; left:${l}%;" title="${s.ip} (${((o=s.geo)==null?void 0:o.country)||"Inconnu"}) - ${s.type}"></div>
+    `}).join("");n.innerHTML=e}function E(){const n=document.getElementById("attackFeedList");if(n){if(t.attacks.length===0){n.innerHTML=`
       <div style="text-align:center; padding:2rem; color:var(--text-dim); font-size:0.85rem;">
         Aucune tentative d'attaque enregistrée pour le moment.
       </div>
-    `;return}n.innerHTML=a.attacks.map(e=>{var t,s;return`
+    `;return}n.innerHTML=t.attacks.map(e=>{var s,i;return`
     <div class="attack-item">
       <div class="attack-meta">
-        <span class="attack-country-flag" title="${((t=e.geo)==null?void 0:t.country)||"Inconnu"}">
-          ${U((s=e.geo)==null?void 0:s.country_code)}
+        <span class="attack-country-flag" title="${((s=e.geo)==null?void 0:s.country)||"Inconnu"}">
+          ${U((i=e.geo)==null?void 0:i.country_code)}
         </span>
         <div>
           <div class="attack-ip">${e.ip}</div>
@@ -442,28 +442,28 @@
       <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:0.35rem;">
         <span class="attack-target">${e.service||"Port inconnu"}</span>
         <div style="display:flex; align-items:center; gap:0.5rem;">
-          <span class="attack-time">${F(e.timestamp)}</span>
+          <span class="attack-time">${N(e.timestamp)}</span>
           <button class="btn btn-danger quick-ban-btn" data-ip="${e.ip}" style="padding:0.2rem 0.5rem; font-size:0.7rem;">
             Bloquer
           </button>
         </div>
       </div>
     </div>
-  `}).join(""),n.querySelectorAll(".quick-ban-btn").forEach(e=>{e.addEventListener("click",async()=>{const t=e.dataset.ip;try{const s=await d.attacks.ban(t,"Bloqué en 1 clic depuis le flux d'attaques");v.playBan(),l(s.message,"success");const i=await d.attacks.getBanned();a.bannedIps=i.banned||[],T()}catch(s){l(s.message,"error")}})})}}function V(){const n=document.getElementById("tabContent");n.innerHTML=`
+  `}).join(""),n.querySelectorAll(".quick-ban-btn").forEach(e=>{e.addEventListener("click",async()=>{const s=e.dataset.ip;try{const i=await m.attacks.ban(s,"Bloqué en 1 clic depuis le flux d'attaques");v.playBan(),c(i.message,"success");const r=await m.attacks.getBanned();t.bannedIps=r.banned||[],T()}catch(i){c(i.message,"error")}})})}}function V(){const n=document.getElementById("tabContent");n.innerHTML=`
     <div class="grid-soc">
       <!-- Port Score Header Card -->
       <div class="panel" style="grid-column: span 12;">
         <div class="panel-body" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:1.5rem;">
           <div style="display:flex; align-items:center; gap:1.5rem;">
-            <div style="width:72px; height:72px; border-radius:50%; border:3px solid ${a.portScore>=80?"var(--emerald)":a.portScore>=60?"var(--amber)":"var(--crimson)"}; display:flex; align-items:center; justify-content:center; font-family:var(--font-cyber); font-size:1.8rem; font-weight:700; color:var(--text-main); box-shadow:0 0 20px ${a.portScore>=80?"var(--emerald-glow)":"var(--crimson-glow)"};">
-              ${a.portScore}%
+            <div style="width:72px; height:72px; border-radius:50%; border:3px solid ${t.portScore>=80?"var(--emerald)":t.portScore>=60?"var(--amber)":"var(--crimson)"}; display:flex; align-items:center; justify-content:center; font-family:var(--font-cyber); font-size:1.8rem; font-weight:700; color:var(--text-main); box-shadow:0 0 20px ${t.portScore>=80?"var(--emerald-glow)":"var(--crimson-glow)"};">
+              ${t.portScore}%
             </div>
             <div>
               <h2 style="font-family:var(--font-cyber); font-size:1.4rem; text-transform:uppercase; letter-spacing:1px;">
                 Indice de Sécurité des Ports
               </h2>
               <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0.2rem;">
-                ${a.ports.length} port(s) détecté(s) en écoute &bull; ${a.riskBreakdown.critical||0} critique(s) &bull; ${a.riskBreakdown.high||0} élevé(s)
+                ${t.ports.length} port(s) détecté(s) en écoute &bull; ${t.riskBreakdown.critical||0} critique(s) &bull; ${t.riskBreakdown.high||0} élevé(s)
               </p>
             </div>
           </div>
@@ -507,7 +507,7 @@
                 </tr>
               </thead>
               <tbody>
-                ${a.ports.map(e=>`
+                ${t.ports.map(e=>`
                   <tr>
                     <td>
                       <span class="port-num">${e.port}</span>
@@ -541,8 +541,8 @@
         </div>
       </div>
     </div>
-  `,document.getElementById("rescanPortsBtn").addEventListener("click",async()=>{try{l("Analyse des ports en cours...","info");const e=await d.ports.getPorts();a.ports=e.ports||[],a.portScore=e.score||100,a.riskBreakdown=e.risk_breakdown||{},V(),l("Scan des ports terminé.","success")}catch(e){l(e.message,"error")}}),document.getElementById("showUfwRulesBtn").addEventListener("click",async()=>{try{const e=await d.ports.getHardeningRules();document.getElementById("rulesCode").innerText=e.commands.join(`
-`),document.getElementById("rulesModal").showModal()}catch(e){l(e.message,"error")}})}function w(){const n=document.getElementById("tabContent");n.innerHTML=`
+  `,document.getElementById("rescanPortsBtn").addEventListener("click",async()=>{try{c("Analyse des ports en cours...","info");const e=await m.ports.getPorts();t.ports=e.ports||[],t.portScore=e.score||100,t.riskBreakdown=e.risk_breakdown||{},V(),c("Scan des ports terminé.","success")}catch(e){c(e.message,"error")}}),document.getElementById("showUfwRulesBtn").addEventListener("click",async()=>{try{const e=await m.ports.getHardeningRules();document.getElementById("rulesCode").innerText=e.commands.join(`
+`),document.getElementById("rulesModal").showModal()}catch(e){c(e.message,"error")}})}function w(){var i,r;const n=document.getElementById("tabContent");n.innerHTML=`
     <div style="margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
       <div>
         <h2 style="font-family:var(--font-cyber); font-size:1.5rem; text-transform:uppercase; letter-spacing:1px;">
@@ -558,53 +558,53 @@
     </div>
 
     <div class="tools-grid">
-      ${a.tools.map(t=>`
+      ${t.tools.map(a=>`
         <div class="tool-card">
           <div>
             <div class="tool-card-header">
               <div>
-                <div class="tool-category">${t.category}</div>
-                <div class="tool-card-title">${t.name}</div>
+                <div class="tool-category">${a.category}</div>
+                <div class="tool-card-title">${a.name}</div>
               </div>
-              <span class="tool-status-badge ${t.status}">
-                <span class="pulse-dot ${t.status==="active"?"":t.status==="not_installed"?"danger":t.status==="not_applicable"?"cyan":"warning"}"></span>
-                ${t.status==="active"?"ACTIF":t.status==="not_installed"?"NON INSTALLÉ":t.status==="not_applicable"?"PRÊT":"ARRÊTÉ"}
+              <span class="tool-status-badge ${a.status}">
+                <span class="pulse-dot ${a.status==="active"?"":a.status==="not_installed"?"danger":a.status==="not_applicable"?"cyan":"warning"}"></span>
+                ${a.status==="active"?"ACTIF":a.status==="not_installed"?"NON INSTALLÉ":a.status==="not_applicable"?"PRÊT":"ARRÊTÉ"}
               </span>
             </div>
             <p class="tool-desc" style="margin-top:0.85rem;">
-              ${t.description}
+              ${a.description}
             </p>
           </div>
 
           <div class="tool-footer">
-            ${t.is_installed?`
+            ${a.is_installed?`
               <div style="display:flex; gap:0.5rem; width:100%;">
-                ${t.can_control_service?`
-                  ${t.status==="active"?`
-                    <button class="btn btn-outline tool-action-btn" data-tool="${t.id}" data-action="restart" style="flex:1; justify-content:center; padding:0.4rem 0.6rem; font-size:0.75rem;">
+                ${a.can_control_service?`
+                  ${a.status==="active"?`
+                    <button class="btn btn-outline tool-action-btn" data-tool="${a.id}" data-action="restart" style="flex:1; justify-content:center; padding:0.4rem 0.6rem; font-size:0.75rem;">
                       Redémarrer
                     </button>
-                    <button class="btn btn-danger tool-action-btn" data-tool="${t.id}" data-action="stop" style="flex:1; justify-content:center; padding:0.4rem 0.6rem; font-size:0.75rem;">
+                    <button class="btn btn-danger tool-action-btn" data-tool="${a.id}" data-action="stop" style="flex:1; justify-content:center; padding:0.4rem 0.6rem; font-size:0.75rem;">
                       Arrêter
                     </button>
                   `:`
-                    <button class="btn btn-primary tool-action-btn" data-tool="${t.id}" data-action="start" style="flex:1; justify-content:center; padding:0.4rem 0.6rem; font-size:0.75rem;">
+                    <button class="btn btn-primary tool-action-btn" data-tool="${a.id}" data-action="start" style="flex:1; justify-content:center; padding:0.4rem 0.6rem; font-size:0.75rem;">
                       Démarrer le Service
                     </button>
                   `}
                 `:`
-                  ${t.id==="lynis"||t.id==="rkhunter"?`
+                  ${a.id==="lynis"||a.id==="rkhunter"?`
                     <div style="display:flex; gap:0.4rem; width:100%;">
-                      <button class="btn btn-primary run-audit-btn" data-tool="${t.id}" style="flex:1; justify-content:center; padding:0.4rem 0.5rem; font-size:0.75rem;">
+                      <button class="btn btn-primary run-audit-btn" data-tool="${a.id}" style="flex:1; justify-content:center; padding:0.4rem 0.5rem; font-size:0.75rem;">
                         🚀 Lancer Scan
                       </button>
-                      <button class="btn btn-outline view-audit-btn" data-tool="${t.id}" style="flex:1; justify-content:center; padding:0.4rem 0.5rem; font-size:0.75rem;">
+                      <button class="btn btn-outline view-audit-btn" data-tool="${a.id}" style="flex:1; justify-content:center; padding:0.4rem 0.5rem; font-size:0.75rem;">
                         📋 Rapport
                       </button>
                     </div>
                   `:`
                     <span style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono);">
-                      ${t.id==="iptables"?"🛡️ Filtrage actif via le noyau Linux & UFW":"🔍 Outil d'analyse &bull; Prêt à l'exécution"}
+                      ${a.id==="iptables"?"🛡️ Filtrage actif via le noyau Linux & UFW":"🔍 Outil d'analyse &bull; Prêt à l'exécution"}
                     </span>
                   `}
                 `}
@@ -612,9 +612,9 @@
             `:`
               <div style="display:flex; justify-content:space-between; align-items:center; width:100%;">
                 <span style="font-size:0.75rem; color:var(--amber); font-family:var(--font-mono);">
-                  ${t.recommended?"⭐ Fortement Recommandé":"Optionnel"}
+                  ${a.recommended?"⭐ Fortement Recommandé":"Optionnel"}
                 </span>
-                <button class="btn btn-primary tool-install-btn" data-tool="${t.id}" style="padding:0.4rem 0.85rem; font-size:0.8rem;">
+                <button class="btn btn-primary tool-install-btn" data-tool="${a.id}" style="padding:0.4rem 0.85rem; font-size:0.8rem;">
                   📦 Installer (apt)
                 </button>
               </div>
@@ -643,41 +643,62 @@
         </div>
       </div>
     </div>
-  `,j(),document.querySelectorAll(".tool-action-btn").forEach(t=>{t.addEventListener("click",async()=>{const s=t.dataset.tool,i=t.dataset.action;try{t.disabled=!0;const r=await d.tools.control(s,i);v.playSuccess(),l(r.message,"success"),a.tools=await d.tools.getTools(),w()}catch(r){l(r.message,"error")}})}),document.querySelectorAll(".tool-install-btn").forEach(t=>{t.addEventListener("click",async()=>{const s=t.dataset.tool;try{t.disabled=!0,t.innerText="Installation en cours...";const i=await d.tools.install(s);v.playSuccess(),l(i.message,"success")}catch(i){v.playAlert(),l(i.message,"error")}finally{a.tools=await d.tools.getTools(),w()}})}),document.querySelectorAll(".run-audit-btn").forEach(t=>{t.addEventListener("click",async()=>{const s=t.dataset.tool;try{t.disabled=!0,t.innerText="Scan en cours...";const i=await d.audit.scan(s);v.playSuccess(),l(i.message,"info")}catch(i){v.playAlert(),l(i.message,"error")}finally{setTimeout(()=>{t.disabled=!1,t.innerText="🚀 Lancer Scan"},5e3)}})}),document.querySelectorAll(".view-audit-btn").forEach(t=>{t.addEventListener("click",()=>{const s=t.dataset.tool;X(s)})});const e=document.getElementById("applyHardeningBtn");e&&e.addEventListener("click",async()=>{try{e.disabled=!0,e.innerText="Application en cours...";const t=await d.audit.optimize();v.playSuccess(),l(t.message,"success"),await j(),a.summary=await d.system.getSummary(),updateSummaryHeader()}catch(t){v.playAlert(),l(t.message,"error")}finally{e.disabled=!1,e.innerText="⚡ Appliquer le Durcissement Recommandé"}}),document.getElementById("refreshToolsBtn").addEventListener("click",async()=>{a.tools=await d.tools.getTools(),w(),l("Statut des outils actualisé.","info")})}async function j(){try{const n=await d.audit.getOptimizations(),e=document.getElementById("hardeningChecksContainer");if(!e)return;e.innerHTML=n.map(t=>`
-      <div class="hardening-card ${t.compliant?"compliant":"non-compliant"}">
-        <div>
-          <div style="font-size:0.72rem; color:var(--cyan-neon); font-family:var(--font-mono); text-transform:uppercase;">${t.category}</div>
-          <div style="font-family:var(--font-cyber); font-weight:700; font-size:0.95rem; margin-top:0.2rem;">${t.title}</div>
-          <p style="color:var(--text-muted); font-size:0.8rem; margin-top:0.35rem; line-height:1.4;">${t.desc}</p>
+
+    <!-- Modal Rapport d'Audit & Diagnostic Lynis / Rootkit Hunter -->
+    <dialog id="auditReportModal" class="soc-modal audit-modal">
+      <div class="modal-content audit-dialog-content">
+        <div class="modal-header">
+          <h3 class="modal-title" id="auditModalTitle">Rapport d'Audit de Sécurité</h3>
+          <button class="close-btn" id="closeAuditModalBtn">&times;</button>
         </div>
-        <span class="tool-status-badge ${t.compliant?"active":"stopped"}">
-          <span class="pulse-dot ${t.compliant?"":"warning"}"></span>
-          ${t.compliant?"ACTIF":"À DURCIR"}
+        <div id="auditModalBody" style="padding:0.5rem 0 1rem 0;">
+          <div style="color:var(--text-dim); font-family:var(--font-mono); text-align:center; padding:2rem 0;">
+            Sélectionnez un rapport pour charger les résultats...
+          </div>
+        </div>
+        <div style="display:flex; justify-content:flex-end; margin-top:1rem; border-top:1px solid var(--panel-border); padding-top:1rem;">
+          <button type="button" class="btn btn-outline" id="closeAuditModalFooterBtn">Fermer</button>
+        </div>
+      </div>
+    </dialog>
+  `,j(),document.querySelectorAll(".tool-action-btn").forEach(a=>{a.addEventListener("click",async()=>{const l=a.dataset.tool,d=a.dataset.action;try{a.disabled=!0;const u=await m.tools.control(l,d);v.playSuccess(),c(u.message,"success"),t.tools=await m.tools.getTools(),w()}catch(u){c(u.message,"error")}})}),document.querySelectorAll(".tool-install-btn").forEach(a=>{a.addEventListener("click",async()=>{const l=a.dataset.tool;try{a.disabled=!0,a.innerText="Installation en cours...";const d=await m.tools.install(l);v.playSuccess(),c(d.message,"success")}catch(d){v.playAlert(),c(d.message,"error")}finally{t.tools=await m.tools.getTools(),w()}})}),document.querySelectorAll(".run-audit-btn").forEach(a=>{a.addEventListener("click",async l=>{l.preventDefault();const d=a.dataset.tool;try{a.disabled=!0,a.innerText="Scan en cours...";const u=await m.audit.scan(d);v.playSuccess(),c(u.message,"info")}catch(u){v.playAlert(),c(u.message,"error")}finally{setTimeout(()=>{a.disabled=!1,a.innerText="🚀 Lancer Scan"},5e3)}})}),document.querySelectorAll(".view-audit-btn").forEach(a=>{a.addEventListener("click",l=>{l.preventDefault(),l.stopPropagation();const d=a.dataset.tool;X(d)})});const e=document.getElementById("auditReportModal");e&&((i=document.getElementById("closeAuditModalBtn"))==null||i.addEventListener("click",()=>e.close()),(r=document.getElementById("closeAuditModalFooterBtn"))==null||r.addEventListener("click",()=>e.close()),e.addEventListener("click",a=>{a.target===e&&e.close()}));const s=document.getElementById("applyHardeningBtn");s&&s.addEventListener("click",async()=>{try{s.disabled=!0,s.innerText="Application en cours...";const a=await m.audit.optimize();v.playSuccess(),c(a.message,"success"),await j(),t.summary=await m.system.getSummary(),updateSummaryHeader()}catch(a){v.playAlert(),c(a.message,"error")}finally{s.disabled=!1,s.innerText="⚡ Appliquer le Durcissement Recommandé"}}),document.getElementById("refreshToolsBtn").addEventListener("click",async()=>{t.tools=await m.tools.getTools(),w(),c("Statut des outils actualisé.","info")})}async function j(){try{const n=await m.audit.getOptimizations(),e=document.getElementById("hardeningChecksContainer");if(!e)return;e.innerHTML=n.map(s=>`
+      <div class="hardening-card ${s.compliant?"compliant":"non-compliant"}">
+        <div>
+          <div style="font-size:0.72rem; color:var(--cyan-neon); font-family:var(--font-mono); text-transform:uppercase;">${s.category}</div>
+          <div style="font-family:var(--font-cyber); font-weight:700; font-size:0.95rem; margin-top:0.2rem;">${s.title}</div>
+          <p style="color:var(--text-muted); font-size:0.8rem; margin-top:0.35rem; line-height:1.4;">${s.desc}</p>
+        </div>
+        <span class="tool-status-badge ${s.compliant?"active":"stopped"}">
+          <span class="pulse-dot ${s.compliant?"":"warning"}"></span>
+          ${s.compliant?"ACTIF":"À DURCIR"}
         </span>
       </div>
-    `).join("")}catch(n){console.error("Error loading hardening checks:",n)}}async function X(n){var i;try{(i=v.playClick)==null||i.call(v)}catch{}const e=document.getElementById("auditReportModal");e&&e.remove();const t=document.createElement("dialog");t.id="auditReportModal",t.className="soc-modal audit-modal",t.innerHTML=`
-    <div class="modal-content audit-dialog-content">
-      <div class="modal-header">
-        <h3 class="modal-title">Chargement du rapport...</h3>
-        <button class="close-btn" id="closeAuditModalBtn">&times;</button>
-      </div>
-      <div id="auditModalBody" style="padding:1rem 0;">
-        <div style="color:var(--text-dim); font-family:var(--font-mono); text-align:center;">
-          Lecture des journaux système de ${n.toUpperCase()}...
+    `).join("")}catch(n){console.error("Error loading hardening checks:",n)}}async function X(n){var r,a,l;try{(r=v.playClick)==null||r.call(v)}catch{}let e=document.getElementById("auditReportModal");e||(e=document.createElement("dialog"),e.id="auditReportModal",e.className="soc-modal audit-modal",e.innerHTML=`
+      <div class="modal-content audit-dialog-content">
+        <div class="modal-header">
+          <h3 class="modal-title" id="auditModalTitle">Rapport d'Audit</h3>
+          <button class="close-btn" id="closeAuditModalBtn">&times;</button>
+        </div>
+        <div id="auditModalBody" style="padding:1rem 0;"></div>
+        <div style="display:flex; justify-content:flex-end; margin-top:1rem; border-top:1px solid var(--panel-border); padding-top:1rem;">
+          <button type="button" class="btn btn-outline" id="closeAuditModalFooterBtn">Fermer</button>
         </div>
       </div>
-    </div>
-  `,document.body.appendChild(t),t.addEventListener("click",r=>{r.target===t&&(t.close(),t.remove())}),typeof t.showModal=="function"?t.showModal():t.setAttribute("open","");const s=document.getElementById("closeAuditModalBtn");s&&s.addEventListener("click",()=>{t.close(),t.remove()});try{const r=await d.audit.getReport(),o=document.getElementById("auditModalBody"),g=t.querySelector(".modal-title");if(n==="lynis"){const c=r.lynis;if(g.innerHTML="🛡️ Rapport d'Audit Lynis",!c.available){o.innerHTML=`<p style="color:var(--amber);">${c.message||"Aucun rapport disponible."}</p>`;return}o.innerHTML=`
+    `,document.body.appendChild(e),e.addEventListener("click",d=>{d.target===e&&e.close()}),(a=e.querySelector("#closeAuditModalBtn"))==null||a.addEventListener("click",()=>e.close()),(l=e.querySelector("#closeAuditModalFooterBtn"))==null||l.addEventListener("click",()=>e.close()));const s=e.querySelector("#auditModalTitle")||e.querySelector(".modal-title"),i=document.getElementById("auditModalBody");s&&(s.innerText=n==="lynis"?"🛡️ Rapport d'Audit Lynis":"🔍 Rapport Rootkit Hunter"),i&&(i.innerHTML=`
+      <div style="color:var(--text-dim); font-family:var(--font-mono); text-align:center; padding:2rem 0;">
+        <span class="pulse-dot" style="margin-right:0.5rem;"></span> Lecture des journaux système de ${n.toUpperCase()}...
+      </div>
+    `),typeof e.showModal=="function"?e.showModal():e.setAttribute("open","");try{const d=await m.audit.getReport(),u=document.getElementById("auditModalBody"),y=e.querySelector(".modal-title");if(n==="lynis"){const o=d.lynis;if(y.innerHTML="🛡️ Rapport d'Audit Lynis",!o.available){u.innerHTML=`<p style="color:var(--amber);">${o.message||"Aucun rapport disponible."}</p>`;return}u.innerHTML=`
         <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); padding:1rem; border-radius:var(--radius-sm); margin-bottom:1.25rem;">
           <div>
             <div style="font-size:0.8rem; color:var(--text-dim); text-transform:uppercase;">Score de Durcissement (Hardening Index)</div>
-            <div style="font-family:var(--font-cyber); font-size:2.4rem; font-weight:700; color:${c.hardening_index>=75?"var(--emerald)":c.hardening_index>=60?"var(--cyan-neon)":"var(--amber)"};">
-              ${c.hardening_index} <span style="font-size:1.1rem; color:var(--text-muted);">/ 100</span>
+            <div style="font-family:var(--font-cyber); font-size:2.4rem; font-weight:700; color:${o.hardening_index>=75?"var(--emerald)":o.hardening_index>=60?"var(--cyan-neon)":"var(--amber)"};">
+              ${o.hardening_index} <span style="font-size:1.1rem; color:var(--text-muted);">/ 100</span>
             </div>
           </div>
           <div style="text-align:right; font-family:var(--font-mono); font-size:0.8rem; color:var(--text-muted);">
-            <div>Dernier Scan : ${c.scan_date}</div>
-            <div style="color:var(--cyan-neon); margin-top:0.25rem;">${c.suggestions_count} suggestions d'optimisation</div>
+            <div>Dernier Scan : ${o.scan_date}</div>
+            <div style="color:var(--cyan-neon); margin-top:0.25rem;">${o.suggestions_count} suggestions d'optimisation</div>
           </div>
         </div>
 
@@ -685,23 +706,23 @@
           Recommandations & Suggestions Prioritaires
         </h4>
         <div style="display:flex; flex-direction:column; gap:0.6rem; max-height:300px; overflow-y:auto;" class="custom-scroll">
-          ${c.suggestions.map(u=>`
+          ${o.suggestions.map(g=>`
             <div style="background:rgba(17,26,51,0.7); border:1px solid var(--panel-border); border-left:3px solid var(--cyan-neon); border-radius:var(--radius-sm); padding:0.65rem 0.85rem;">
-              <span style="font-family:var(--font-mono); font-size:0.7rem; color:var(--amber); background:rgba(255,170,0,0.15); padding:1px 5px; border-radius:3px;">${u.id}</span>
-              <span style="font-size:0.85rem; margin-left:0.4rem; color:var(--text-main);">${u.desc}</span>
+              <span style="font-family:var(--font-mono); font-size:0.7rem; color:var(--amber); background:rgba(255,170,0,0.15); padding:1px 5px; border-radius:3px;">${g.id}</span>
+              <span style="font-size:0.85rem; margin-left:0.4rem; color:var(--text-main);">${g.desc}</span>
             </div>
           `).join("")}
         </div>
-      `}else if(n==="rkhunter"){const c=r.rkhunter;if(g.innerHTML="🔍 Rapport Rootkit Hunter",!c.available){o.innerHTML=`<p style="color:var(--amber);">${c.message||"Aucun rapport disponible."}</p>`;return}o.innerHTML=`
+      `}else if(n==="rkhunter"){const o=d.rkhunter;if(y.innerHTML="🔍 Rapport Rootkit Hunter",!o.available){u.innerHTML=`<p style="color:var(--amber);">${o.message||"Aucun rapport disponible."}</p>`;return}u.innerHTML=`
         <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.04); padding:1rem; border-radius:var(--radius-sm); margin-bottom:1.25rem;">
           <div>
             <div style="font-size:0.8rem; color:var(--text-dim); text-transform:uppercase;">État du Système</div>
-            <div style="font-family:var(--font-cyber); font-size:1.6rem; font-weight:700; color:${c.warnings_count===0?"var(--emerald)":"var(--amber)"};">
-              ${c.warnings_count===0?"Système Sain & Conforme":`${c.warnings_count} Avertissement(s) Détecté(s)`}
+            <div style="font-family:var(--font-cyber); font-size:1.6rem; font-weight:700; color:${o.warnings_count===0?"var(--emerald)":"var(--amber)"};">
+              ${o.warnings_count===0?"Système Sain & Conforme":`${o.warnings_count} Avertissement(s) Détecté(s)`}
             </div>
           </div>
           <div style="text-align:right; font-family:var(--font-mono); font-size:0.8rem; color:var(--text-muted);">
-            <div>Dernier Scan : ${c.scan_date}</div>
+            <div>Dernier Scan : ${o.scan_date}</div>
           </div>
         </div>
 
@@ -709,21 +730,21 @@
           Analyse des Avertissements
         </h4>
         <div style="display:flex; flex-direction:column; gap:0.75rem; max-height:300px; overflow-y:auto;" class="custom-scroll">
-          ${c.warnings.length===0?`
+          ${o.warnings.length===0?`
             <div style="color:var(--emerald); font-size:0.9rem;">Aucun rootkit ni altération suspecte trouvée.</div>
-          `:c.warnings.map(u=>`
-            <div style="background:rgba(17,26,51,0.7); border:1px solid rgba(255,170,0,0.3); border-left:3px solid ${u.is_false_positive?"var(--cyan-neon)":"var(--crimson)"}; border-radius:var(--radius-sm); padding:0.75rem 0.95rem;">
+          `:o.warnings.map(g=>`
+            <div style="background:rgba(17,26,51,0.7); border:1px solid rgba(255,170,0,0.3); border-left:3px solid ${g.is_false_positive?"var(--cyan-neon)":"var(--crimson)"}; border-radius:var(--radius-sm); padding:0.75rem 0.95rem;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
-                <span style="font-family:var(--font-mono); font-size:0.75rem; color:${u.is_false_positive?"var(--cyan-neon)":"var(--crimson)"};">
-                  ${u.is_false_positive?"✅ Faux Positif Connu (Normal sur Debian / RPi)":"⚠️ Alerte de Sécurité"}
+                <span style="font-family:var(--font-mono); font-size:0.75rem; color:${g.is_false_positive?"var(--cyan-neon)":"var(--crimson)"};">
+                  ${g.is_false_positive?"✅ Faux Positif Connu (Normal sur Debian / RPi)":"⚠️ Alerte de Sécurité"}
                 </span>
               </div>
-              <div style="font-size:0.85rem; color:var(--text-main);">${u.explanation}</div>
-              <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim); margin-top:0.35rem; word-break:break-all;">${u.raw}</div>
+              <div style="font-size:0.85rem; color:var(--text-main);">${g.explanation}</div>
+              <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-dim); margin-top:0.35rem; word-break:break-all;">${g.raw}</div>
             </div>
           `).join("")}
         </div>
-      `}}catch(r){document.getElementById("auditModalBody").innerHTML=`<p style="color:var(--crimson);">Erreur: ${r.message}</p>`}}function G(){var s,i,r,o,g,c,u,m,y,h,b,x,M,z,P,L,_,R,q;const n=document.getElementById("tabContent"),e=a.telemetry||{hostname:"raspberrypi",model:"Raspberry Pi",os:"Linux",uptime:"N/A",cpu:{percent:12,temperature_c:44.5,cores:4},memory:{total_mb:3800,used_mb:850,percent:22},disk:{total_gb:32,used_gb:7.5,percent:23},network:{bytes_sent_mb:14.2,bytes_recv_mb:45.8}},t=(((s=e.cpu)==null?void 0:s.temperature_c)||0)>60;n.innerHTML=`
+      `}}catch(d){document.getElementById("auditModalBody").innerHTML=`<p style="color:var(--crimson);">Erreur: ${d.message}</p>`}}function G(){var i,r,a,l,d,u,y,o,g,h,b,x,A,z,L,P,_,R,q;const n=document.getElementById("tabContent"),e=t.telemetry||{hostname:"raspberrypi",model:"Raspberry Pi",os:"Linux",uptime:"N/A",cpu:{percent:12,temperature_c:44.5,cores:4},memory:{total_mb:3800,used_mb:850,percent:22},disk:{total_gb:32,used_gb:7.5,percent:23},network:{bytes_sent_mb:14.2,bytes_recv_mb:45.8}},s=(((i=e.cpu)==null?void 0:i.temperature_c)||0)>60;n.innerHTML=`
     <div class="grid-soc">
       <!-- Hardware System Overview Card -->
       <div class="panel" style="grid-column: span 12;">
@@ -759,7 +780,7 @@
           <div>
             <div style="font-size:0.75rem; color:var(--text-dim); text-transform:uppercase;">Cœurs Processeur</div>
             <div style="font-family:var(--font-cyber); font-size:1.15rem; font-weight:700; color:var(--emerald); margin-top:0.25rem;">
-              ${((i=e.cpu)==null?void 0:i.cores)||4} Cœurs Actifs
+              ${((r=e.cpu)==null?void 0:r.cores)||4} Cœurs Actifs
             </div>
           </div>
         </div>
@@ -771,14 +792,14 @@
         <div class="gauge-card">
           <div class="gauge-header">
             <span class="gauge-title">Charge Processeur</span>
-            <span class="gauge-val" style="color:var(--cyan-neon);">${((r=e.cpu)==null?void 0:r.percent)||0}%</span>
+            <span class="gauge-val" style="color:var(--cyan-neon);">${((a=e.cpu)==null?void 0:a.percent)||0}%</span>
           </div>
           <div class="progress-track">
-            <div class="progress-fill" style="width:${((o=e.cpu)==null?void 0:o.percent)||0}%;"></div>
+            <div class="progress-fill" style="width:${((l=e.cpu)==null?void 0:l.percent)||0}%;"></div>
           </div>
           <div class="gauge-sub">
             <span>Fréquence dynamique</span>
-            <span>${((g=e.cpu)==null?void 0:g.cores)||4} Threads</span>
+            <span>${((d=e.cpu)==null?void 0:d.cores)||4} Threads</span>
           </div>
         </div>
 
@@ -786,16 +807,16 @@
         <div class="gauge-card">
           <div class="gauge-header">
             <span class="gauge-title">Température SoC (RPi)</span>
-            <span class="gauge-val" style="color:${t?"var(--crimson)":"var(--emerald)"};">
-              ${((c=e.cpu)==null?void 0:c.temperature_c)||42}&deg;C
+            <span class="gauge-val" style="color:${s?"var(--crimson)":"var(--emerald)"};">
+              ${((u=e.cpu)==null?void 0:u.temperature_c)||42}&deg;C
             </span>
           </div>
           <div class="progress-track">
-            <div class="progress-fill ${t?"warm":""}" style="width:${Math.min(100,(((u=e.cpu)==null?void 0:u.temperature_c)||40)/85*100)}%;"></div>
+            <div class="progress-fill ${s?"warm":""}" style="width:${Math.min(100,(((y=e.cpu)==null?void 0:y.temperature_c)||40)/85*100)}%;"></div>
           </div>
           <div class="gauge-sub">
             <span>Seuil critique: 80°C</span>
-            <span>${t?"Ventilation recommandée":"Refroidissement Optimal"}</span>
+            <span>${s?"Ventilation recommandée":"Refroidissement Optimal"}</span>
           </div>
         </div>
 
@@ -803,10 +824,10 @@
         <div class="gauge-card">
           <div class="gauge-header">
             <span class="gauge-title">Mémoire Vive (RAM)</span>
-            <span class="gauge-val" style="color:var(--emerald);">${((m=e.memory)==null?void 0:m.percent)||0}%</span>
+            <span class="gauge-val" style="color:var(--emerald);">${((o=e.memory)==null?void 0:o.percent)||0}%</span>
           </div>
           <div class="progress-track">
-            <div class="progress-fill" style="width:${((y=e.memory)==null?void 0:y.percent)||0}%;"></div>
+            <div class="progress-fill" style="width:${((g=e.memory)==null?void 0:g.percent)||0}%;"></div>
           </div>
           <div class="gauge-sub">
             <span>${((h=e.memory)==null?void 0:h.used_mb)||0} Mo Utilisés</span>
@@ -821,11 +842,11 @@
             <span class="gauge-val" style="color:var(--purple);">${((x=e.disk)==null?void 0:x.percent)||0}%</span>
           </div>
           <div class="progress-track">
-            <div class="progress-fill" style="width:${((M=e.disk)==null?void 0:M.percent)||0}%;"></div>
+            <div class="progress-fill" style="width:${((A=e.disk)==null?void 0:A.percent)||0}%;"></div>
           </div>
           <div class="gauge-sub">
             <span>${((z=e.disk)==null?void 0:z.used_gb)||0} Go Occupés</span>
-            <span>${((P=e.disk)==null?void 0:P.total_gb)||0} Go Total</span>
+            <span>${((L=e.disk)==null?void 0:L.total_gb)||0} Go Total</span>
           </div>
         </div>
       </div>
@@ -847,7 +868,7 @@
           <div>
             <div style="font-size:0.8rem; color:var(--text-dim); text-transform:uppercase;">Total Données Reçues (RX)</div>
             <div style="font-family:var(--font-cyber); font-size:2.2rem; font-weight:700; color:var(--emerald); margin-top:0.3rem;">
-              ${((L=e.network)==null?void 0:L.bytes_recv_mb)||0} <span style="font-size:1rem;">Mo</span>
+              ${((P=e.network)==null?void 0:P.bytes_recv_mb)||0} <span style="font-size:1rem;">Mo</span>
             </div>
             <div style="font-size:0.75rem; color:var(--text-dim); font-family:var(--font-mono);">${((_=e.network)==null?void 0:_.packets_recv)||0} paquets</div>
           </div>
@@ -862,4 +883,4 @@
         </div>
       </div>
     </div>
-  `}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",O):O();
+  `}document.readyState==="loading"?document.addEventListener("DOMContentLoaded",D):D();
