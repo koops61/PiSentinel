@@ -23,7 +23,7 @@ Le script installe automatiquement :
 - L'application dans **`/var/www/html/sentinel`**
 - L'environnement virtuel Python isolé dans `/var/www/html/sentinel/.venv`
 - Les paquets de sécurité Linux (`ufw`, `fail2ban`, `lynis`)
-- Le service `systemd` `pisentinel.service` configuré pour démarrer sur `127.0.0.1:8000`
+- Le service `systemd` `pisentinel.service` configuré pour démarrer sur `127.0.0.1:8443`
 
 ---
 
